@@ -1,0 +1,40 @@
+# Some rules to follow 
+# Make sure to put a . after single-digit numbers of type floats
+# Don't use any character other than space and carriage return(Enter)
+# For the entry vmec_fname, the file that you want to import must be at the bottom-most rowa
+
+#vmec_fname = 'wout_revD_input_vmec_45_320'
+#vmec_fname = 'wout_Miller_eqbm_64_128'
+#vmec_fname = 'wout_D_eqbm_pres_scale_75'
+#vmec_fname = 'wout_D_eqbm_large_eps'
+#vmec_fname = 'wout_jet_postri'
+vmec_fname  = 'wout_D3D_negtri_pres_scale_1'
+
+
+# choose 1 if you want an input file in netCDF format
+want_to_save_GX = 0
+
+# choose 1 if you want an input files in grid.out format
+want_to_save_GS2 = 1
+
+#choose 1 if you want to do a ballooning scan in the s-alpha space. Careful with the value of nperiod
+# choosing large nperiod will take significantly longer
+want_to_ball_scan = 0
+
+#Choose 1 if you want the characteristic equilibrium-related quantities
+want_foms = 0
+
+# choose 1 if your equilibrium is up-down asymmetric
+asymmetric_eqbm = 0
+
+# choose 0 if you want to use theta_st for jacobian calculation. choose 0 right now because I am having some problems working in theta_vmec_coordinate 
+which_theta = 0
+
+# which normalization scheme do you want. Default is 0
+norm_scheme = 0
+
+#nperiod must always be >= 1. No of time the flux tube goes around is (2*nperiod-1)
+nperiod = 2
+
+
+
