@@ -1,0 +1,16 @@
+# don't commit the FOM scripts
+src/*_foms_*.py
+src/*ipynb*
+
+# profile plotter is sufficient
+src/surf*.py
+
+# swap files (due to Vim)
+src/.*.swo
+src/.*.swp
+
+# only commit the relenvant output dirs
+output_files/misc_figures/
+
+
+
