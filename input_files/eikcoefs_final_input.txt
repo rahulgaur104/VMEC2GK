@@ -11,6 +11,12 @@
 vmec_fname  = 'wout_D3D_negtri_pres_scale_1'
 
 
+#Index of the surface of interest. Input is surface index instead of some normalized radius rho
+surf_idx = 200
+
+#nperiod must always be >= 1. No of time the flux tube goes around is (2*nperiod-1)
+nperiod = 2
+
 # choose 1 if you want an input file in netCDF format
 want_to_save_GX = 0
 
@@ -24,17 +30,17 @@ want_to_ball_scan = 0
 #Choose 1 if you want the characteristic equilibrium-related quantities
 want_foms = 0
 
-# choose 1 if your equilibrium is up-down asymmetric
+# choose 1 if your equilibrium is up-down asymmetric. Presently not available
 asymmetric_eqbm = 0
 
-# choose 0 if you want to use theta_st for jacobian calculation. choose 0 right now because I am having some problems working in theta_vmec_coordinate 
+# choose 0 if you want to use theta_st for jacobian calculation. choose 0 right now because 
 which_theta = 0
 
-# which normalization scheme do you want. Default is 0
+# which normalization scheme do you want. Default is 0 => a_N is effective minor radius of the LCFS 
+# such that pi*a_N**2 = area enclosed by the LCFS
+# B_N = Phi_LCFS/(pi*a_N**2)
 norm_scheme = 0
 
-#nperiod must always be >= 1. No of time the flux tube goes around is (2*nperiod-1)
-nperiod = 2
 
 
 

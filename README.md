@@ -1,7 +1,16 @@
-#VMEC2GK
+## VMEC2GK
 VMEC equilibrium to gyrokinetics 
 
 This script takes a VMEC equilibrium file for an axisymmetric equilibrium and creates the geometric coefficient files required for a gyrokinetics runs with GS2 or GX.
+
+## Requirements
+Script should work on Python3 >=3.6.8 
+* numpy
+* scipy
+* matplotlib
+* netCDF4
+* multiprocessing
+
 
 ## Generating eikcoefs
 Edit the relevant parameters in the file ./input\_files/eikcoefs\_final\_input.txt and run the script eikcoefs\_final.py

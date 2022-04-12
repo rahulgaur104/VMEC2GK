@@ -2,15 +2,19 @@
 src/*_foms_*.py
 src/*ipynb*
 
-# profile plotter is sufficient
+# profile_plotter.py is sufficient
 src/surf*.py
 
 # swap files (due to Vim)
 src/.*.swo
 src/.*.swp
 
+# input swap files
+input_files/.*.swo
+input_files/.*.swp
+
 # only commit the relenvant output dirs
-output_files/misc_figures/
+output_files/misc_figures
 
 
 

@@ -47,6 +47,7 @@ with open(fname_in_txt, 'r') as f:
 
 
 vmec_fname        = variables["vmec_fname"]
+surf_idx          = int(variables["surf_idx"])
 want_to_save_GX   = variables["want_to_save_GX"]
 want_to_save_GS2  = variables["want_to_save_GS2"]
 want_to_ball_scan = variables["want_to_ball_scan"]
@@ -64,20 +65,13 @@ except:
 eqbm_type = vmec_fname.split('_')[2]
 
 
-
 vmec_fname_path = '{0}/{1}/{2}.nc'.format(parnt_dir_nam,'input_files', vmec_fname)
 rtg = Dataset(vmec_fname_path, 'r')
 
 totl_surfs = len(rtg.variables['phi'][:].data)
 
-#surf_idx = 100
-#surf_idx = 128
-surf_idx = 128
-#surf_idx = 306
-
 surf_min = surf_idx-3
 surf_max = surf_idx+3
-
 
 if totl_surfs < surf_max:
     print("total number of surfaces > maximum surface index") 
@@ -94,8 +88,8 @@ fac = int(4)
 P_half = 4*np.pi*1E-7*rtg.variables['pres'][:].data
 P_full = 4*np.pi*1E-7*rtg.variables['presf'][:].data
 
-q_vmec_full = -1/rtg.variables['iotaf'][:].data
-q_vmec_half = -1/rtg.variables['iotas'][:].data
+q_vmec_full = -1/(rtg.variables['iotaf'][:].data - 1E-16)
+q_vmec_half = -1/(rtg.variables['iotas'][:].data - 1E-16) 
 
 
 psi_full = rtg.variables['chi'][:].data
@@ -119,81 +113,81 @@ dPhids = rtg.variables['phipf'][:].data
 Phi_half = Phi_f + 0.5/(totl_surfs-1)*dPhids 
 
 
-P_vmec_data_4_spl = half_full_combine(P_half, P_full)
-q_vmec_data_4_spl = half_full_combine(q_vmec_half, q_vmec_full)
+P_vmec_data_4_spl   = half_full_combine(P_half, P_full)
+q_vmec_data_4_spl   = half_full_combine(q_vmec_half, q_vmec_full)
 psi_vmec_data_4_spl = half_full_combine(psi_half, psi_full)
 Phi_vmec_data_4_spl = half_full_combine(Phi_f, Phi_half)
 #rho_vmec_data_4_spl = np.array([np.abs(1-psi_vmec_data_4_spl[i]/psi_LCFS) for i in range(len(psi_vmec_data_4_spl))])
 rho_vmec_data_4_spl = np.array([np.sqrt(np.abs(Phi_vmec_data_4_spl[i]/Phi_LCFS)) for i in range(len(psi_vmec_data_4_spl))])
 
 
-P_spl = cubspl(psi_vmec_data_4_spl[::-1], P_vmec_data_4_spl[::-1])
-q_spl = cubspl(psi_vmec_data_4_spl[::-1], q_vmec_data_4_spl[::-1]) 
+P_spl   = cubspl(psi_vmec_data_4_spl[::-1], P_vmec_data_4_spl[::-1])
+q_spl   = cubspl(psi_vmec_data_4_spl[::-1], q_vmec_data_4_spl[::-1]) 
 rho_spl = cubspl(psi_vmec_data_4_spl[::-1], rho_vmec_data_4_spl[::-1])
 
 
-psi = rtg.variables['chi'][surf_min:surf_max].data
+psi      = rtg.variables['chi'][surf_min:surf_max].data
 psi_LCFS = rtg.variables['chi'][-1].data
 
-dpsids = rtg.variables['chipf'][surf_min+1:surf_max+1].data
+dpsids   = rtg.variables['chipf'][surf_min+1:surf_max+1].data
 psi_half = rtg.variables['chi'][surf_min+1:surf_max+1] + 0.5/(totl_surfs-1)*dpsids
 
-psi = psi/(2*np.pi)
+psi      = psi/(2*np.pi)
 psi_LCFS = psi_LCFS/(2*np.pi)
 
 psi_half = psi_half/(2*np.pi)
 #pdb.set_trace()
 
-psi = psi_LCFS - psi  # shift and flip sign to ensure consistency b/w VMEC & anlyticl
+psi      = psi_LCFS - psi  # shift and flip sign to ensure consistency b/w VMEC & anlyticl
 psi_half = psi_LCFS - psi_half  # shift and flip sign to ensure consistency b/w VMEC & anlyticl
 
-Phi_f = rtg.variables['phi'][surf_min:surf_max].data
+Phi_f    = rtg.variables['phi'][surf_min:surf_max].data
 Phi_LCFS = rtg.variables['phi'][-1].data
 
-dPhids = rtg.variables['phipf'][surf_min:surf_max].data
+dPhids   = rtg.variables['phipf'][surf_min:surf_max].data
 Phi_half = Phi_f + 0.5/(totl_surfs-1)*dPhids 
 
 # crucial unit conversion being performed here
 # MPa to T^2 by multiplying by  \mu  = 4*np.pi*1E-7
-P = 4*np.pi*1E-7*rtg.variables['pres'][surf_min+1:surf_max+1].data
-q_vmec = -1/rtg.variables['iotaf'][surf_min:surf_max].data
+P           = 4*np.pi*1E-7*rtg.variables['pres'][surf_min+1:surf_max+1].data
+q_vmec      = -1/rtg.variables['iotaf'][surf_min:surf_max].data
 q_vmec_half = -1/rtg.variables['iotas'][surf_min+1:surf_max+1].data
 
-xm = rtg.variables['xm'][:].data
+xm      = rtg.variables['xm'][:].data
 fixdlen = len(xm) 
 
 theta = np.linspace(-np.pi, np.pi, fac*fixdlen+1)
 
-xm_nyq = rtg.variables['xm_nyq'][:].data
+xm_nyq   = rtg.variables['xm_nyq'][:].data
 R_mag_ax = rtg.variables['raxis_cc'][:].data
 
 
 rmnc = rtg.variables['rmnc'][surf_min:surf_max].data   # Fourier coeffs of R. Full mesh quantity.
-R = ifft_routine(rmnc, xm, 'e', fixdlen, fac)
+R    = ifft_routine(rmnc, xm, 'e', fixdlen, fac)
 
 rmnc_LCFS = rtg.variables['rmnc'][-1].data
-R_LCFS =  ifft_routine(rmnc_LCFS, xm, 'e', fixdlen, fac)
+R_LCFS    =  ifft_routine(rmnc_LCFS, xm, 'e', fixdlen, fac)
 
 zmns_LCFS = rtg.variables['zmns'][-1].data
-Z_LCFS =  ifft_routine(zmns_LCFS, xm, 'o', fixdlen, fac)
+Z_LCFS    =  ifft_routine(zmns_LCFS, xm, 'o', fixdlen, fac)
 
 
 no_of_surfs = np.shape(R)[0]
 
 zmns = rtg.variables['zmns'][surf_min:surf_max].data  #
-Z = ifft_routine(zmns, xm, 'o', fixdlen, fac)
+Z    = ifft_routine(zmns, xm, 'o', fixdlen, fac)
 
 bmnc = rtg.variables['bmnc'][surf_min+1:surf_max+1].data   # Fourier coeffs of B, Half mesh quantity, i.e. specified on the radial points in between the full-mesh points. Must be interpolated to full mesh
-B = ifft_routine(bmnc, xm_nyq, 'e', fixdlen, fac)
+B    = ifft_routine(bmnc, xm_nyq, 'e', fixdlen, fac)
 
-gmnc = rtg.variables['gmnc'][surf_min+1:surf_max+1].data   # Fourier coeffs of the Jacobian
+gmnc  = rtg.variables['gmnc'][surf_min+1:surf_max+1].data   # Fourier coeffs of the Jacobian
 g_jac = ifft_routine(gmnc, xm_nyq, 'e', fixdlen, fac)
 
 lmns = rtg.variables['lmns'][surf_min+1:surf_max+1].data #half mesh quantity
 lmns = ifft_routine(lmns, xm, 'o', fixdlen, fac)
 
-B_sub_zeta = rtg.variables['bsubvmnc'][surf_min+1:surf_max+1].data # half mesh quantity
-B_sub_zeta = ifft_routine(B_sub_zeta, xm_nyq, 'e', fixdlen, fac)
+B_sub_zeta  = rtg.variables['bsubvmnc'][surf_min+1:surf_max+1].data # half mesh quantity
+B_sub_zeta  = ifft_routine(B_sub_zeta, xm_nyq, 'e', fixdlen, fac)
 B_sub_theta = rtg.variables['bsubumnc'][surf_min+1:surf_max+1].data # half-mesh quantity
 B_sub_theta = ifft_routine(B_sub_theta, xm_nyq, 'e', fixdlen, fac)
 
@@ -209,7 +203,7 @@ if (R[0][0] < R[0][idx0]):
     B = extract_essence(B, idx0+1)
     B_sub_zeta = extract_essence(B_sub_zeta, idx0+1)
     B_sub_theta = extract_essence(B_sub_theta, idx0+1)
-    g_jac = extract_essence(g_jac, idx0+1)
+    g_jac  = extract_essence(g_jac, idx0+1)
     F_half = np.array([np.mean(B_sub_zeta[i]) for i in range(no_of_surfs)])
     
     # B_poloidal from B.cdot J (grad s \times grad phi) (signs may be different)
@@ -218,26 +212,26 @@ if (R[0][0] < R[0][idx0]):
     #g_jac = extract_essence(g_jac, idx0+1)
     lmns = extract_essence(lmns, idx0+1)
     
-    F = np.reshape(F_half, (-1,1))
+    F  = np.reshape(F_half, (-1,1))
     u4 = []
     theta_geo = np.array([np.arctan2(Z[i], R[i]-R_mag_ax) for i in range(no_of_surfs)])
     
     
     # All surfaces before surf_min be excluded from our calculations
-    fixlen_by_2 = idx0 + 1
-    theta_geo_com = np.linspace(0, np.pi, idx0+1)
-    theta_vmec = np.linspace(0, np.pi, idx0+1)
+    fixlen_by_2    = idx0 + 1
+    theta_geo_com  = np.linspace(0, np.pi, idx0+1)
+    theta_vmec     = np.linspace(0, np.pi, idx0+1)
     #theta_st = theta_vmec + lmns
-    theta_st = theta_vmec - lmns
+    theta_st       = theta_vmec - lmns
     B_theta_vmec_2 = np.zeros((no_of_surfs, idx0+1))
 else:
-    Z = np.abs(extract_essence(Z, idx0+1, 1))
-    R = extract_essence(R, idx0+1, 1)
-    B = extract_essence(B, idx0+1, 1)
-    B_sub_zeta = extract_essence(B_sub_zeta, idx0+1, 1)
+    Z           = np.abs(extract_essence(Z, idx0+1, 1))
+    R           = extract_essence(R, idx0+1, 1)
+    B           = extract_essence(B, idx0+1, 1)
+    B_sub_zeta  = extract_essence(B_sub_zeta, idx0+1, 1)
     B_sub_theta = extract_essence(B_sub_theta, idx0+1, 1)
-    g_jac = extract_essence(g_jac, idx0+1, 1)
-    F_half = np.array([np.mean(B_sub_zeta[i]) for i in range(no_of_surfs)])
+    g_jac       = extract_essence(g_jac, idx0+1, 1)
+    F_half      = np.array([np.mean(B_sub_zeta[i]) for i in range(no_of_surfs)])
     
     # B_poloidal from B.cdot J (grad s \times grad phi) (signs may be different)
     B_theta_vmec = np.sqrt(np.abs(B_sub_theta*Phi_LCFS/(2*np.pi*np.reshape(q_vmec_half, (-1,1))*g_jac)))
@@ -253,10 +247,10 @@ else:
     
     
     # All surfaces before surf_min be excluded from our calculations
-    fixlen_by_2 = idx0 + 1
-    theta_geo_com = np.linspace(0, np.pi, idx0+1)
-    theta_vmec = np.linspace(0, np.pi, idx0+1)
-    theta_st = theta_vmec + lmns
+    fixlen_by_2    = idx0 + 1
+    theta_geo_com  = np.linspace(0, np.pi, idx0+1)
+    theta_vmec     = np.linspace(0, np.pi, idx0+1)
+    theta_st       = theta_vmec + lmns
     B_theta_vmec_2 = np.zeros((no_of_surfs, idx0+1))
 
 #Get all the relevant quantities from a full-grid onto a half grid by interpolating in the radial direction
@@ -268,14 +262,15 @@ for i in np.arange(0, idx0+1):
 # making sure we choose the right R for a Phi_half
 rho_2 = np.array([(np.max(R[i]) - np.min(R[i]))/(np.max(R_LCFS)- np.min(R_LCFS)) for i in range(no_of_surfs)])
 #rho = np.array([np.abs(1-psi_half[i]/psi_LCFS) for i in range(no_of_surfs)])
-rho = np.array([np.sqrt(np.abs(Phi_half[i]/Phi_LCFS)) for i in range(no_of_surfs)])
+rho   = np.array([np.sqrt(np.abs(Phi_half[i]/Phi_LCFS)) for i in range(no_of_surfs)])
 
 
 for i in range(no_of_surfs):
     if i == 0:
     	B_theta_vmec_2[i] = np.zeros((idx0+1,))
     else:
-    	B_theta_vmec_2[i] = np.sqrt(B[i]**2 - (F[i]/R[i])**2) # This B_theta is calculated using a different method. It must be equal to B_theta_vmec. It is important to note that the interpolated R must be in between the full-grid Rs.
+    	B_theta_vmec_2[i] = np.sqrt(B[i]**2 - (F[i]/R[i])**2) # This B_theta is calculated using a different method. It must be equal to B_theta_vmec.
+                                                              #It is important to note that the interpolated R must be in between the full-grid Rs.
 
 
 
@@ -337,7 +332,7 @@ B_local_max_0_idx = find_peaks(B_original[:6])[0]
 
 override0 = 0
 if len(B_local_max_0_idx) > 0 and override0 == 0:
-    mag_local_peak = "True"
+    mag_local_peak    = "True"
     B_local_max_0_idx = int(B_local_max_0_idx)
 else:
     mag_local_peak = "False"
@@ -355,7 +350,8 @@ else:
 B_original2 = B[int(no_of_surfs/2)-1].copy()
 #theta_st_com = np.sort(symmetrize(theta_st_com.copy(), B[int(no_of_surfs/2)-1]))
 theta_st_com = theta_st[int(no_of_surfs/2)-1].copy()
-print("theta_st_com is not uniformly spaced so derm can't be central difference")
+#print("theta_st_com is not uniformly spaced so derm can't be central difference")
+print("Note that theta_st is not uniformly spaced so derm can't be central difference\n")
 #pdb.set_trace()
 
 
@@ -380,23 +376,23 @@ jac = dR_dpsi*dZ_dt - dZ_dpsi*dR_dt
 
 dpsidR = dZ_dt/jac
 dpsidZ = -dR_dt/jac
-dt_dR = -dZ_dpsi/jac
-dt_dZ =  dR_dpsi/jac
+dt_dR  = -dZ_dpsi/jac
+dt_dZ  =  dR_dpsi/jac
 
 
 for i in range(no_of_surfs):
-     dRj[i, :] = derm(R[i,:], 'l', 'e')
-     dZj[i, :] = derm(Z[i,:], 'l', 'o') 
-     phi = np.arctan2(dZj[i,:], dRj[i,:])
+     dRj[i, :]  = derm(R[i,:], 'l', 'e')
+     dZj[i, :]  = derm(Z[i,:], 'l', 'o') 
+     phi        = np.arctan2(dZj[i,:], dRj[i,:])
      phi_n[i,:] = np.concatenate((phi[phi>=0]-np.pi/2, phi[phi<0]+3*np.pi/2)) 
 
 u_ML = np.arctan2(derm(Z, 'l', 'o'), derm(R, 'l', 'e'))
 
 
-dl = np.sqrt(derm(R, 'l', 'e')**2 + derm(Z, 'l', 'o')**2)
+dl  = np.sqrt(derm(R, 'l', 'e')**2 + derm(Z, 'l', 'o')**2)
 # The way u is defined in the notes, it should decrease with increasing l which is different from the value being calculated here
 R_c = dl/derm(phi_n, 'l', 'o')
-B2 = B**2
+B2  = B**2
 
 #plt.plot(theta_geo_m[10], theta_st_com_m, theta_geo_com, theta_st[10]); plt.show() 
 
@@ -409,12 +405,12 @@ B_p = B_p_t_cart
 B0 = [np.sqrt(B_p_t_cart[i]**2 + (F[i]/R[i,:])**2) for i in np.arange(surf_min, no_of_surfs)]
 
 q_int = np.zeros((no_of_surfs,))
-L = np.cumsum(dl, axis =1)/2
+L     = np.cumsum(dl, axis =1)/2
 
 for i in np.arange(no_of_surfs):
 
     q_int[i] = 2*np.trapz(F[i]/(2*R[i]*np.pi*np.abs(np.sqrt(dpsidR[i]**2 + dpsidZ[i]**2))), L[i])
-    jac_chk = F[i]*jac/(R[i]*q_int[i])
+    jac_chk  = F[i]*jac/(R[i]*q_int[i])
     #print((np.max(jac_chk[i])-np.min(jac_chk[i]))/np.mean(np.abs(jac_chk[i])), sep = '   ')
     #q_int[i] = 2*np.trapz(F[i]/(2*R[i]*np.pi*np.abs(R[i]*B_p_t[i])), L[i])
 
@@ -509,7 +505,8 @@ dt_st_l_ex = nperiod_data_extend(dt_st_l[rel_surf_idx], nperiod)
 dBdr_bish    = B_p_ex/B_ex*(-B_p_ex/R_c_ex + dPdpsi*R_ex - F**2*np.sin(u_ML_ex)/(R_ex**3*B_p_ex))
 dtdr_st_bish = -(aprime_bish_1 + dqdr_ex*theta_st_com_ex)/np.reshape(q_vmec_half, (-1,1))
 
-gds2  =  (dpsidrho)**2*(1/R_ex**2 + (dqdr_ex*theta_st_com_ex)**2 + (np.reshape(q_vmec_half,(-1,1)))**2*(dtdr_st_ex**2 + (dt_st_l_ex/dl_ex)**2)+ 2*np.reshape(q_vmec_half,(-1,1))*dqdr_ex*theta_st_com_ex*dtdr_st_ex)*1/(a_N*B_N)**2
+gds2  =  (dpsidrho)**2*(1/R_ex**2 + (dqdr_ex*theta_st_com_ex)**2 + (np.reshape(q_vmec_half,(-1,1)))**2*(dtdr_st_ex**2 + (dt_st_l_ex/dl_ex)**2)+\
+          2*np.reshape(q_vmec_half,(-1,1))*dqdr_ex*theta_st_com_ex*dtdr_st_ex)*1/(a_N*B_N)**2
 
 gds21 = dpsidrho*dqdpsi*dpsidrho*(dpsi_dr_ex*aprime)/(a_N*B_N)**2
 gds22 = (dqdpsi*dpsidrho)**2*np.abs(dpsi_dr_ex)**2/(a_N*B_N)**2
@@ -559,7 +556,12 @@ spl_st_to_eqarc_theta = cubspl(theta_st_com_ex[theta_st_com_ex <=np.pi], theta_e
     
     
 
-bishop_dict = {'a_N':a_N, 'B_N':B_N, 'mag_well':mag_well, 'mag_local_peak':mag_local_peak,  'B_local_peak':int(B_local_max_0_idx), 'pres_scale':pres_scale, 'eqbm_type':eqbm_type, 'surf_idx':surf_idx, 'high_res_fac':high_res_fac, 'qfac':q_vmec_half[rel_surf_idx], 'shat':shat, 'dqdpsi':dqdpsi,'P':P[rel_surf_idx], 'dPdpsi':dPdpsi, 'F':F[rel_surf_idx], 'dFdpsi':dFdpsi, 'rho': rho[rel_surf_idx], 'dpsidrho':dpsidrho, 'theta_st':theta_st_com_ex, 'nperiod':nperiod, 'a_s':a_s, 'b_s':b_s, 'c_s':c_s, 'R_ex':R_ex, 'Z_ex':Z_ex, 'R_c_ex':R_c_ex, 'B_p_ex' :B_p_ex, 'B_ex':B_ex, 'dBl_ex':dBl_ex, 'dt_st_l_ex': dt_st_l_ex, 'dtdr_st_ex' : dtdr_st_ex, 'dl_ex':dl_ex,'u_ML_ex':u_ML_ex, 'gds2_ex':gds2, 'spl_st_to_geo_theta':spl_st_to_geo_theta, 'spl_st_to_eqarc_theta':spl_st_to_eqarc_theta}
+bishop_dict = {'a_N':a_N, 'B_N':B_N, 'mag_well':mag_well, 'mag_local_peak':mag_local_peak,  'B_local_peak':int(B_local_max_0_idx), 'pres_scale':pres_scale,\
+               'eqbm_type':eqbm_type, 'surf_idx':surf_idx, 'high_res_fac':high_res_fac, 'qfac':q_vmec_half[rel_surf_idx], 'shat':shat, 'dqdpsi':dqdpsi,\
+               'P':P[rel_surf_idx], 'dPdpsi':dPdpsi, 'F':F[rel_surf_idx], 'dFdpsi':dFdpsi, 'rho': rho[rel_surf_idx], 'dpsidrho':dpsidrho, 'theta_st':theta_st_com_ex,\
+               'nperiod':nperiod, 'a_s':a_s, 'b_s':b_s, 'c_s':c_s, 'R_ex':R_ex, 'Z_ex':Z_ex, 'R_c_ex':R_c_ex, 'B_p_ex' :B_p_ex, 'B_ex':B_ex, 'dBl_ex':dBl_ex,\
+               'dt_st_l_ex': dt_st_l_ex, 'dtdr_st_ex' : dtdr_st_ex, 'dl_ex':dl_ex,'u_ML_ex':u_ML_ex, 'gds2_ex':gds2, 'spl_st_to_geo_theta':spl_st_to_geo_theta,\
+               'spl_st_to_eqarc_theta':spl_st_to_eqarc_theta}
 
 
 #print("rhoc=", (np.max(R[rel_surf_idx])-np.min(R[rel_surf_idx]))/(np.max(R_LCFS)-np.min(R_LCFS)))
@@ -580,7 +582,7 @@ if want_to_ball_scan == 1:
 
 if want_to_save_GS2 == 1:
     # run another script from this script
-    os.system('python3 bishoper_save.py bishop_dict.pkl')
+    os.system('python3 bishoper_save_GS2.py bishop_dict.pkl')
 
 
 if want_to_save_GX == 1:
