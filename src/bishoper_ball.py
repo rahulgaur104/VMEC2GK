@@ -9,11 +9,11 @@ import sys
 import pdb
 import numpy as np
 import pickle
-#from inspect import currentframe, getframeinfo
+from inspect import currentframe, getframeinfo
 import multiprocessing as mp
 from scipy.interpolate import CubicSpline as cubspl
 from scipy.sparse.linalg import eigs
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 from utils import *
 
 bishop_dict   = sys.argv[1]
@@ -278,9 +278,9 @@ def gamma_ball(shat_n, dPdpsi_n):
 
 
 if check_ball(shat, dPdpsi) == 0:
-    print("The nominal equilibrium is inf-n ideal ballooning stable...\nDoing a gamma scan now...")
+    print("The nominal equilibrium is inf-n ideal ballooning stable.\nDoing a gamma scan now...")
 else:
-    print("The nominal equilibrium is inf-n ideal ballooning unstable...\nDoing a gamma scan now...")
+    print("The nominal equilibrium is inf-n ideal ballooning unstable.\nDoing a gamma scan now...")
 
 
 #gamma_ball(shat, dPdpsi)
@@ -299,8 +299,14 @@ ball_scan_arr1 = np.zeros((len1, len2))
 # to keep the growth rate data
 ball_scan_arr2 = np.zeros((len1, len2))
 
+# Setting the number of threads to 1. We don't want multithreading. 
+os.environ["OMP_NUM_THREADS"]="1"
 
 nop = int(8)
+
+frameinfo = getframeinfo(currentframe())
+print("Using %d processes. To change the number of processes go to line %d of the bishoper_ball.py routine\n"%(nop, frameinfo.lineno-2))
+
 pool = mp.Pool(processes=nop)
 results1 = np.array([[pool.apply_async(check_ball, args=(shat_grid[i], dp_dpsi_grid[j])) for i in range(len1)] for j in range(len2)])
 
@@ -321,7 +327,9 @@ cs2 = plt.contourf(X.T, Y.T, ball_scan_arr2, cmap='hot')
 plt.colorbar()
 plt.plot(shat, dPdpsi, 'x',color='limegreen', mew=5, ms=8)
 rand_idx  = 42
-plt.savefig('{0}/output_files/s-alpha-plots/{1}-{2}.png'.format(parnt_dir_nam, "s-alpha", rand_idx))
+path = '{0}/output_files/s-alpha-plots/{1}-{2}.png'.format(parnt_dir_nam, "s-alpha", rand_idx)
+plt.savefig('%s'%(path))
+print("balllooning s-alpha curve successfully saved at %s"%(path))
 #plt.show()
 
 

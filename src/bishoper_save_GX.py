@@ -303,14 +303,14 @@ def bishop_save(shat_n, dPdpsi_n, pfac):
         aprime_nc[:]   = aprime_sav
         
         drhodpsi_nc[0] = a_N**2*B_N/dpsidrho
-        kxfac_nc[0]    = 1.
+        kxfac_nc[0]    = a_N**2*B_N*abs(qfac/rho*dpsidrho)
         Rmaj_nc[0]     = (np.max(Rplot_nc) + np.min(Rplot_nc))/2*1/(a_N)
         q[0]           = qfac
         shat[0]        = shat_n
         #pdb.set_trace()
         ds.close()
         
-        print('GX file saved succesfully in the dir output_files_vmec\n')
+        print('GX file saved succesfully in the dir output_files\n')
         
 pfac = 1.0
 bishop_save(shat, pfac*dPdpsi, pfac)

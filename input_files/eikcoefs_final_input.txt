@@ -18,14 +18,14 @@ surf_idx = 200
 nperiod = 2
 
 # choose 1 if you want an input file in netCDF format
-want_to_save_GX = 0
+want_to_save_GX = 1
 
 # choose 1 if you want an input files in grid.out format
 want_to_save_GS2 = 1
 
 #choose 1 if you want to do a ballooning scan in the s-alpha space. Careful with the value of nperiod
 # choosing large nperiod will take significantly longer
-want_to_ball_scan = 0
+want_to_ball_scan = 1
 
 #Choose 1 if you want the characteristic equilibrium-related quantities
 want_foms = 0
@@ -33,13 +33,19 @@ want_foms = 0
 # choose 1 if your equilibrium is up-down asymmetric. Presently not available
 asymmetric_eqbm = 0
 
-# choose 0 if you want to use theta_st for jacobian calculation. choose 0 right now because 
+# choose 0 if you want to use theta_st for jacobian calculation. choose 0 right now
+# the option for choosing other theta is unavailable
 which_theta = 0
 
-# which normalization scheme do you want. Default is 0 => a_N is effective minor radius of the LCFS 
+# Which normalization scheme do you want? 
+# Default: 1 => a_N is effective minor radius of the LCFS 
 # such that pi*a_N**2 = area enclosed by the LCFS
 # B_N = Phi_LCFS/(pi*a_N**2)
-norm_scheme = 0
+
+# If norm_schem = 2 => a_N is the minor radius of the LCFS
+# B_N = F/a_N where F is poloidal current on the local eqbm. surface
+
+norm_scheme = 1
 
 
 

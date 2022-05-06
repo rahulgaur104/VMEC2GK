@@ -12,7 +12,6 @@ import numpy as np
 import pickle
 from scipy.signal import find_peaks
 from netCDF4 import Dataset
-from matplotlib import pyplot as plt
 from utils import *
 
 bishop_dict   = sys.argv[1]
@@ -240,14 +239,13 @@ def bishop_save(shat_n, dPdpsi_n, pfac):
             nlambda = len(lambda_create(B_ball))
             lambda_arr = lambda_create(B_ball)
 
-        #plt.plot(theta_st_com_ex, B_ex/B_N, '-or', ms=3)
-        plt.plot(theta_ball, B_ball, '-sg', ms=3)
-        plt.hlines(1/lambda_arr,  xmin=-10, xmax=10)
-        #plt.plot(theta_ball, gds21_ball, '-or', ms=1.8)
-        #plt.plot(theta_ball, gds2_ball, '-oy', ms=2); 
-        #plt.yscale('log')
-        #plt.plot(theta_ball, cvdrift_ball)
-        plt.show()
+        lambda_look = 0
+        if lambda_look == 1:
+            from matplotlib import pyplot as plt
+            plt.plot(theta_ball, B_ball, '-sg', ms=3)
+            plt.hlines(1/lambda_arr,  xmin=-10, xmax=10)
+            plt.show()
+
         
         char = "grid.out_D3D_%s_pres_scale_%d_surf_%d_nperiod_%d_nl%d_nt%d"%(eqbm_type, pres_scale, surf_idx, nperiod, nlambda, len(theta_ball))
         if isinstance(pfac, int) != 1:
@@ -268,8 +266,10 @@ def bishop_save(shat_n, dPdpsi_n, pfac):
             #pdb.set_trace()
             g.writelines('%.19f\n'%(lambda_arr[i]))
         
+        Rmaj = (np.max(R_ex) + np.min(R_ex))/(2*a_N)
+
         g.writelines(headings[2])
-        g.writelines('  %d    %d    %d   %0.1f   %0.1f    %.9f   %.1f   %.2f\n'%((ntheta-1)/2, 1, (ntheta-1), a_N**2*B_N*np.abs(1/dpsidrho), 1.0, shat, 1.0, qfac))
+        g.writelines('  %d    %d    %d   %0.1f   %0.1f    %.9f   %.1f   %.2f\n'%((ntheta-1)/2, 1, (ntheta-1), a_N**2*B_N*np.abs(1/dpsidrho), Rmaj, shat, a_N**2*B_N*abs(qfac/rho*dpsidrho), qfac))
         #pdb.set_trace()
  
         for i in np.arange(3, len(headings)):
@@ -278,9 +278,10 @@ def bishop_save(shat_n, dPdpsi_n, pfac):
                 g.write(A1[i-3][j])
         g.close()
         
-pfac = [0.25]
+pfac = [1.0]
 for i in range(len(pfac)):
     bishop_save(shat, pfac[i]*dPdpsi, pfac[i])
 
-#pdb.set_trace()
+
+print('GS2 file saved succesfully in the dir output_files\n')
 

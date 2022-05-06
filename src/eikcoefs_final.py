@@ -11,7 +11,7 @@ from netCDF4 import Dataset
 from scipy.integrate import cumtrapz as ctrap
 from scipy.interpolate import CubicSpline as cubspl
 from scipy.signal import savgol_filter as sf
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 from inspect import currentframe, getframeinfo
 from utils import *
 
@@ -52,6 +52,7 @@ want_to_save_GX   = variables["want_to_save_GX"]
 want_to_save_GS2  = variables["want_to_save_GS2"]
 want_to_ball_scan = variables["want_to_ball_scan"]
 want_foms         = variables["want_foms"]
+norm_scheme       = int(variables["norm_scheme"])
 theta_4_jac       = variables["which_theta"]
 nperiod           = int(variables['nperiod'])
 high_res_fac      = 42
@@ -351,7 +352,7 @@ B_original2 = B[int(no_of_surfs/2)-1].copy()
 #theta_st_com = np.sort(symmetrize(theta_st_com.copy(), B[int(no_of_surfs/2)-1]))
 theta_st_com = theta_st[int(no_of_surfs/2)-1].copy()
 #print("theta_st_com is not uniformly spaced so derm can't be central difference")
-print("Note that theta_st is not uniformly spaced so derm can't be central difference\n")
+print("Note that theta_st is not uniformly spaced so derm can't be central difference.\nUsing 2nd order FD on a non-uniform grid\n")
 #pdb.set_trace()
 
 
@@ -453,18 +454,21 @@ dqdpsi   = q_spl.derivative()(psi[rel_surf_idx])
 
 dpsidrho = 1/rho_spl.derivative()(psi[rel_surf_idx])
 
-#only for debugging
-#B_N =  1
-#a_N = 1
-
 #area_LCFS = np.abs(ctrap(Z_LCFS, R_LCFS, initial=0)[-1])
 #a_N = np.sqrt(area_LCFS/np.pi)
 #B_N = np.abs(Phi_LCFS/area_LCFS)
+if norm_scheme == 1:
+    area_LCFS = np.abs(ctrap(Z_LCFS, R_LCFS, initial=0)[-1])
+    a_N1      = np.sqrt(area_LCFS/np.pi)
+    a_N       = rtg.variables['Aminor_p'][:].data # imported from VMEC, same as the a_N 3 lines above
+    B_N       = np.abs(Phi_LCFS/(np.pi*a_N**2))
+elif norm_scheme == 2:
+    a_N       = np.max(R_LCFS) - np.min(R_LCFS)
+    B_N       = F[rel_surf_idx]/a_N
+else: #only for debugging
+    B_N =  1
+    a_N = 1
 
-area_LCFS = np.abs(ctrap(Z_LCFS, R_LCFS, initial=0)[-1])
-a_N1      = np.sqrt(area_LCFS/np.pi)
-a_N       = rtg.variables['Aminor_p'][:].data # imported from VMEC, same as the a_N 3 lines above
-B_N       = np.abs(Phi_LCFS/(np.pi*a_N**2))
 # corresponds to dPhidrho = 1
 
 shat_test = -(1/(2*np.pi*(2*nperiod-1)*q_vmec_half[rel_surf_idx]))*(rho[rel_surf_idx]*dpsidrho)*(a_s[-1]*dFdpsi +b_s[-1]*dPdpsi - c_s[-1])
@@ -521,7 +525,7 @@ dBl        = derm(B, 'l', 'e')
 
 want_2_filter = 1
 if want_2_filter == 1:
-    print('filter-L2-norm-err = %.4f'%(np.linalg.norm(dBl[2]-np.concatenate((np.array([0]),sf(dBl[2], 9,2)[1:])))))
+    print('filter-L2-norm-err = %.4f\n'%(np.linalg.norm(dBl[2]-np.concatenate((np.array([0]),sf(dBl[2], 9,2)[1:])))))
     dBl = np.concatenate((np.zeros((len(B),1)), sf(dBl, 9,2)[:, 1:]), axis=1)
 else:
     dBl =  derm(B, 'l', 'e') 
