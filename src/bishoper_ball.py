@@ -329,7 +329,7 @@ plt.plot(shat, dPdpsi, 'x',color='limegreen', mew=5, ms=8)
 rand_idx  = 42
 path = '{0}/output_files/s-alpha-plots/{1}-{2}.png'.format(parnt_dir_nam, "s-alpha", rand_idx)
 plt.savefig('%s'%(path))
-print("balllooning s-alpha curve successfully saved at %s"%(path))
+print("balllooning s-alpha curve successfully saved at %s\n"%(path))
 #plt.show()
 
 

@@ -352,7 +352,7 @@ B_original2 = B[int(no_of_surfs/2)-1].copy()
 #theta_st_com = np.sort(symmetrize(theta_st_com.copy(), B[int(no_of_surfs/2)-1]))
 theta_st_com = theta_st[int(no_of_surfs/2)-1].copy()
 #print("theta_st_com is not uniformly spaced so derm can't be central difference")
-print("Note that theta_st is not uniformly spaced so derm can't be central difference.\nUsing 2nd order FD on a non-uniform grid\n")
+print("Note that theta_st is not uniformly spaced so derm can't be central difference.\nUsing 2nd order non-uniform FD on a non-uniform grid\n")
 #pdb.set_trace()
 
 

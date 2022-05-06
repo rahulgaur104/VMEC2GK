@@ -45,7 +45,7 @@ which_theta = 0
 # If norm_schem = 2 => a_N is the minor radius of the LCFS
 # B_N = F/a_N where F is poloidal current on the local eqbm. surface
 
-norm_scheme = 1
+norm_scheme = 2
 
 
 
