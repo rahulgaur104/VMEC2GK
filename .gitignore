@@ -10,10 +10,14 @@ src/.*.swo
 src/.*.swp
 
 # input swap files
-./input_files/.*.swo
-./input_files/.*.swp
+input_files/*.*.swo
+input_files/*.*.swp
 input_files/.*.swo
 input_files/.*.swp
+input_files/wout_Miller*.nc
+input_files/wout_revD*.nc
+input_files/wout_D*.nc
+input_files/wout_100*.nc
 
 # only commit the relenvant output dirs
 output_files/misc_figures
