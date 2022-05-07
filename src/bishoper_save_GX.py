@@ -78,6 +78,7 @@ theta_st_com = theta_st_com_ex[theta_st_com_ex <= np.pi]
 
 def bishop_save(shat_n, dPdpsi_n, pfac):
 
+        dPdpsi_n     = pfac*dPdpsi_n
         dFdpsi_n     = (-shat_n*2*np.pi*(2*nperiod-1)*qfac/(rho*dpsidrho) - b_s[-1]*dPdpsi_n + c_s[-1])/a_s[-1]
         #pdb.set_trace()
         dqdpsi_n     = shat_n*qfac/rho*1/dpsidrho
@@ -193,7 +194,7 @@ def bishop_save(shat_n, dPdpsi_n, pfac):
         # Repetition check
         rep_idxs = np.where(np.diff(theta_ball) == 0)[0]
         if len(rep_idxs) > 0:
-            print("repeated indices found")
+            print("repeated indices found...removing them now")
             del theta_ball[rep_idxs]
             del gradpar_ball[rep_idxs]
             del theta_ball[rep_idxs]
@@ -220,7 +221,6 @@ def bishop_save(shat_n, dPdpsi_n, pfac):
 ###############################-----------------------GX_NC_SAVE-------------------------------######################
 ####################################################################################################################
         
-        # creating equispaced equal-arc data
         ntheta        = len(theta_ball)
         ntheta2       = ntheta - 1
         theta_ball2   = np.delete(theta_ball, int(ntheta)-1)
@@ -313,5 +313,5 @@ def bishop_save(shat_n, dPdpsi_n, pfac):
         print('GX file saved succesfully in the dir output_files\n')
         
 pfac = 1.0
-bishop_save(shat, pfac*dPdpsi, pfac)
+bishop_save(shat, dPdpsi, pfac)
 

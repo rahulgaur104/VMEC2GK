@@ -83,8 +83,12 @@ if totl_surfs < surf_max:
 
 
 # fac = 0.5*(no of poloidal points in real space)/(number of modes in Fourier space)
-fac = int(4)
+fac = int(2)
 
+
+#####################################################################################################################
+#######################----------------------IMPORTING VMEC DATA--------------------#################################
+#####################################################################################################################
 
 P_half = 4*np.pi*1E-7*rtg.variables['pres'][:].data
 P_full = 4*np.pi*1E-7*rtg.variables['presf'][:].data
@@ -172,13 +176,15 @@ R_LCFS    =  ifft_routine(rmnc_LCFS, xm, 'e', fixdlen, fac)
 zmns_LCFS = rtg.variables['zmns'][-1].data
 Z_LCFS    =  ifft_routine(zmns_LCFS, xm, 'o', fixdlen, fac)
 
-
+# number of surfaces
 no_of_surfs = np.shape(R)[0]
 
 zmns = rtg.variables['zmns'][surf_min:surf_max].data  #
 Z    = ifft_routine(zmns, xm, 'o', fixdlen, fac)
 
-bmnc = rtg.variables['bmnc'][surf_min+1:surf_max+1].data   # Fourier coeffs of B, Half mesh quantity, i.e. specified on the radial points in between the full-mesh points. Must be interpolated to full mesh
+# Fourier coeffs of B, Half mesh quantity, i.e. specified on the radial points in between the full-mesh points. 
+# Must be interpolated to full mesh
+bmnc = rtg.variables['bmnc'][surf_min+1:surf_max+1].data   
 B    = ifft_routine(bmnc, xm_nyq, 'e', fixdlen, fac)
 
 gmnc  = rtg.variables['gmnc'][surf_min+1:surf_max+1].data   # Fourier coeffs of the Jacobian
@@ -214,9 +220,7 @@ if (R[0][0] < R[0][idx0]):
     lmns = extract_essence(lmns, idx0+1)
     
     F  = np.reshape(F_half, (-1,1))
-    u4 = []
     theta_geo = np.array([np.arctan2(Z[i], R[i]-R_mag_ax) for i in range(no_of_surfs)])
-    
     
     # All surfaces before surf_min be excluded from our calculations
     fixlen_by_2    = idx0 + 1
@@ -243,7 +247,6 @@ else:
     #F =  np.zeros((no_of_surfs,))
     #F = np.interp(Phi_f, Phi_half, F_half)
     F = np.reshape(F_half, (-1,1))
-    u4 = []
     theta_geo = np.array([np.arctan2(Z[i], R[i]-R_mag_ax) for i in range(no_of_surfs)])
     
     
@@ -274,10 +277,13 @@ for i in range(no_of_surfs):
                                                               #It is important to note that the interpolated R must be in between the full-grid Rs.
 
 
+##############################################################################################################################
+##################--------------------------PRIMARY LOWEST LEVEL CALCULATIONS----------------------------#####################
+##############################################################################################################################
 
-psi = psi_half
+psi      = psi_half
 F_half_2 = np.abs(np.array([1/ctrap(2*g_jac[i]/(Phi_LCFS*R[i]**2), theta_vmec, initial = 0)[-1] for i in range(no_of_surfs)]))
-F_spl = cubspl(psi[::-1], F[::-1])
+F_spl    = cubspl(psi[::-1], F[::-1])
 
 #fixlen_by_2 = (2*(nperiod-1)+1)*fixlen_by_2
 # various derivatives
@@ -291,17 +297,18 @@ dBdr       = np.zeros((no_of_surfs, fixlen_by_2))
 dBdt       = np.zeros((no_of_surfs, fixlen_by_2))
 dPdr       = np.zeros((no_of_surfs, fixlen_by_2))
 dqdr       = np.zeros((no_of_surfs, fixlen_by_2))
+
 B0         = np.zeros((no_of_surfs, fixlen_by_2))
+
 B_p_t      = np.zeros((no_of_surfs, fixlen_by_2))
 B_p_t_cart = np.zeros((no_of_surfs, fixlen_by_2))
 B_p        = np.zeros((no_of_surfs, fixlen_by_2))
-dpsidr     = np.zeros((no_of_surfs, fixlen_by_2))
+
 phi        = np.zeros((fixlen_by_2,))
 phi_n      = np.zeros((no_of_surfs, fixlen_by_2))
-dt         = np.zeros((no_of_surfs, fixlen_by_2))
 u_ML       = np.zeros((no_of_surfs, fixlen_by_2))
-u_ML_diff  = np.zeros((no_of_surfs, fixlen_by_2))
 curv       = np.zeros((no_of_surfs, fixlen_by_2))   
+
 dR_dpsi    = np.zeros((no_of_surfs, fixlen_by_2))
 dR_dt      = np.zeros((no_of_surfs, fixlen_by_2))
 dZ_dpsi    = np.zeros((no_of_surfs, fixlen_by_2))
@@ -310,13 +317,10 @@ dpsidR     = np.zeros((no_of_surfs, fixlen_by_2))
 dpsidZ     = np.zeros((no_of_surfs, fixlen_by_2))
 dt_dR      = np.zeros((no_of_surfs, fixlen_by_2))
 dt_dZ      = np.zeros((no_of_surfs, fixlen_by_2))
+
 jac        = np.zeros((no_of_surfs, fixlen_by_2))
-
-
 dBr        = np.zeros((no_of_surfs, fixlen_by_2))
-u5 = []
 
-psi_diff = derm(psi, 'r')
 
 #VMEC B_p here
 B_p =  B_theta_vmec
@@ -365,6 +369,7 @@ for i in range(0,no_of_surfs):
     theta_geo[i] = np.arctan2(Z[i], R[i]-R_mag_ax)
   
 
+psi_diff= derm(psi, 'r')
 dt_st_l = derm(theta_st, 'l', 'o')
 
 
@@ -373,12 +378,12 @@ dR_dt   = dermv(R, theta_st, 'l', 'e')
 dZ_dpsi = derm(Z, 'r')/psi_diff
 dZ_dt   = dermv(Z, theta_st, 'l', 'o')
 
-jac = dR_dpsi*dZ_dt - dZ_dpsi*dR_dt
+jac     = dR_dpsi*dZ_dt - dZ_dpsi*dR_dt
 
-dpsidR = dZ_dt/jac
-dpsidZ = -dR_dt/jac
-dt_dR  = -dZ_dpsi/jac
-dt_dZ  =  dR_dpsi/jac
+dpsidR  = dZ_dt/jac
+dpsidZ  = -dR_dt/jac
+dt_dR   = -dZ_dpsi/jac
+dt_dZ   =  dR_dpsi/jac
 
 
 for i in range(no_of_surfs):
@@ -421,8 +426,9 @@ spl_st_to_col_theta = cubspl(theta_st_com, theta[theta>=0])
 spl_st_to_geo_theta = cubspl(theta_st_com, theta_geo[int(no_of_surfs/2)-1])
 
 
-
-####################----------------EIKCOEFS CALCULATION ---------------------------##################
+##########################################################################################################################
+#######################-------------------------EIKCOEFS CALCULATION ------------------------------#######################
+##########################################################################################################################
 
 
 rel_surf_idx = surf_idx - surf_min -1 # -1 in the end becuase of python's 0 based indexing 
@@ -454,22 +460,21 @@ dqdpsi   = q_spl.derivative()(psi[rel_surf_idx])
 
 dpsidrho = 1/rho_spl.derivative()(psi[rel_surf_idx])
 
-#area_LCFS = np.abs(ctrap(Z_LCFS, R_LCFS, initial=0)[-1])
-#a_N = np.sqrt(area_LCFS/np.pi)
-#B_N = np.abs(Phi_LCFS/area_LCFS)
+# Usual stellarator normalization
 if norm_scheme == 1:
     area_LCFS = np.abs(ctrap(Z_LCFS, R_LCFS, initial=0)[-1])
     a_N1      = np.sqrt(area_LCFS/np.pi)
     a_N       = rtg.variables['Aminor_p'][:].data # imported from VMEC, same as the a_N 3 lines above
     B_N       = np.abs(Phi_LCFS/(np.pi*a_N**2))
-elif norm_scheme == 2:
+
+elif norm_scheme == 2: # Trinity normalization
     a_N       = np.max(R_LCFS) - np.min(R_LCFS)
-    B_N       = F[rel_surf_idx]/a_N
+    B_N       = 2*F[rel_surf_idx]/(np.max(R_LCFS) + np.min(R_LCFS))
+
 else: #only for debugging
     B_N =  1
     a_N = 1
 
-# corresponds to dPhidrho = 1
 
 shat_test = -(1/(2*np.pi*(2*nperiod-1)*q_vmec_half[rel_surf_idx]))*(rho[rel_surf_idx]*dpsidrho)*(a_s[-1]*dFdpsi +b_s[-1]*dPdpsi - c_s[-1])
 
@@ -578,22 +583,19 @@ if want_to_ball_scan == 1 or want_to_save_GS2 == 1 or want_foms == 1:
     dict_file.close()
 
 
-if want_to_ball_scan == 1:
-    # run another script from this script
-    os.system('python3 bishoper_ball.py bishop_dict.pkl')
-    #print("HERE I AM")
-    #time.sleep(10)
-
 if want_to_save_GS2 == 1:
     # run another script from this script
     os.system('python3 bishoper_save_GS2.py bishop_dict.pkl')
-
 
 if want_to_save_GX == 1:
     # run another script from this script
     os.system('python3 bishoper_save_GX.py bishop_dict.pkl')
 
-
+if want_to_ball_scan == 1:
+    # run another script from this script
+    os.system('python3 bishoper_ball.py bishop_dict.pkl')
+    #print("HERE I AM")
+    #time.sleep(10)
 
 
 

@@ -6,6 +6,7 @@ All the routines required to do the main calculation.
 
 import numpy as np
 from scipy.signal import find_peaks
+from inspect import currentframe, getframeinfo
 
 
 def extract_essence(arr, extract_len, mode=0):
@@ -298,7 +299,7 @@ def find_optim_theta_arr(arr, theta_arr, res_par=-2):
     # Right now it strictly preserves the maximas and minimas of B. Provision to preserve maximas and minimas of all the eikcoefs.
     #surf 256
 
-    res_par =  8 #100_negtri
+    res_par =  3 #100_negtri
 
     rows, colms = np.shape(arr)
     idx = []
@@ -332,7 +333,11 @@ def find_optim_theta_arr(arr, theta_arr, res_par=-2):
     diff2 = int(np.mean(np.diff(comb_peaks)) - res_par)+0
     if diff2 <= 0:
         diff2 = 1
-        print("....look at the theta optimizer function...")
+        frameinfo = getframeinfo(currentframe())
+        print("This is not an error, but you should look at the theta optimizer function in utils.py script line %d\n"%(frameinfo.lineno()))
+        print("Try changing the variable res_par in this routine to get rid of this warning")
+        #print("This is not an error. It means that the routine used to sparsify the theta grid did not work.\n/
+        #       There may be a lot of theta points in the input files making the computation expensive\n"%(nop, frameinfo.lineno-2))
 
     # 1 - ps1, nperiod =10
     # 2 - ps1 nperiod 5

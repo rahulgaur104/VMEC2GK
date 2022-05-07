@@ -10,6 +10,8 @@ src/.*.swo
 src/.*.swp
 
 # input swap files
+./input_files/.*.swo
+./input_files/.*.swp
 input_files/.*.swo
 input_files/.*.swp
 
