@@ -4,7 +4,7 @@ VMEC equilibrium to gyrokinetics
 This script takes a VMEC equilibrium file for an axisymmetric equilibrium and creates the geometric coefficient files required for a gyrokinetics run with GS2 or GX.
 
 ## Requirements
-Script should work on Python3 >=3.6.8 
+Script should work on Python3 >=3.6.8 and < 3.9  
 * numpy
 * scipy
 * matplotlib
