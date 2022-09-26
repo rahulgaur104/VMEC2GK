@@ -162,6 +162,29 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+# ===============
+# Vim temporaries
+
+# Swap
+[._]*.s[a-v][a-z]
+!*.svg  # comment out if you don't need vector files
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# Session
+Session.vim
+Sessionx.vim
+
+# Temporary
+.netrwhist
+*~
+# Auto-generated tag files
+tags
+# Persistent undo
+[._]*.un~
+
 # ================
 # Project specific
 
@@ -180,9 +203,6 @@ input_files/wout_100*.nc
 
 # only commit the relenvant output dirs
 output_files/misc_figures
-
-# vim swap files
-*.swp
 
 # Pickles
 *.pkl
