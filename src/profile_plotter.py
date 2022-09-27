@@ -3,25 +3,24 @@
 For plotting flux surfaces and P and q profiles.
 """
 import os
-import time
 import re
-import pdb
 import numpy as np
-from scipy.integrate import cumtrapz as ctrap
+
 from scipy.interpolate import CubicSpline as cubspl
 from netCDF4 import Dataset
 from matplotlib import pyplot as plt
-from inspect import currentframe, getframeinfo
-import multiprocessing as mp
-from utils import *
+
+from utils import (
+    half_full_combine,
+    ifft_routine,
+    extract_essence,
+)
 
 parnt_dir_nam = os.path.dirname(os.getcwd())
 
 # Dictionary to store input variables read from the text file
 variables = {}
-fname_in_txt = "{0}/{1}/{2}".format(
-    parnt_dir_nam, "input_files", "eikcoefs_final_input.txt"
-)
+fname_in_txt = f"{parnt_dir_nam}/input_files/eikcoefs_final_input.txt"
 
 with open(fname_in_txt, "r") as f:
     for line in f:
@@ -31,7 +30,7 @@ with open(fname_in_txt, "r") as f:
             value, _ = value.split("\n")
             # value = value.strip('\n')
             if name != "vmec_fname":
-                len1 = len(re.findall("\d+.\d*", value))
+                len1 = len(re.findall(r"\d+.\d*", value))
             else:
                 len1 = 0
 
@@ -44,11 +43,11 @@ with open(fname_in_txt, "r") as f:
                     variables[name] = eval(
                         value.replace(" ", "")
                     )  # remove any spaces in the names
-                except:
+                except Exception:
                     variables[name] = value.replace(
                         " ", ""
                     )  # remove any spaces in the names
-        except:
+        except Exception:
             continue
 
 
@@ -69,8 +68,6 @@ totl_surfs = len(rtg.variables["phi"][:].data)
 
 surf_min = 0
 surf_max = totl_surfs
-
-# pdb.set_trace()
 
 
 # fac = 0.5*(no of poloidal points in real space)/(number of modes in Fourier space)
@@ -139,7 +136,6 @@ psi = psi / (2 * np.pi)
 psi_LCFS = psi_LCFS / (2 * np.pi)
 
 psi_half = psi_half / (2 * np.pi)
-# pdb.set_trace()
 
 psi = psi_LCFS - psi  # shift and flip sign to ensure consistency b/w VMEC & anlyticl
 psi_half = (
@@ -200,7 +196,7 @@ if R[0][0] < R[0][idx0]:
     theta_geo_com = np.linspace(0, np.pi, idx0 + 1)
     theta_vmec = np.linspace(0, np.pi, idx0 + 1)
     # theta_st = theta_vmec + lmns
-    theta_st = theta_vmec - lmns
+    theta_st = theta_vmec - lmns  # FIXME lmns is undefined here!
 else:
     Z = np.abs(extract_essence(Z, idx0 + 1, 1))
     R = extract_essence(R, idx0 + 1, 1)
@@ -280,4 +276,3 @@ plt.tight_layout()
 plt.savefig(
     "{0}/output_files_vmec/profiles/{1}".format(parnt_dir_nam, "flux_surfs.png")
 )
-# pdb.set_trace()
