@@ -235,6 +235,9 @@ R_mag_ax = rtg.variables["raxis_cc"][:].data.item()
 
 idx0 = int((xm[-1] + 1) * fac / 2)
 
+# TODO the following if/else blocks are almost identical, except for extract_essence
+# mode being 0 (default) or 1, and the theta_st expression containing a minus or plus.
+# Confirm this is the case and refactor.
 if R[0][0] < R[0][idx0]:
     Z = np.abs(extract_essence(Z, idx0 + 1))
     R = extract_essence(R, idx0 + 1)
