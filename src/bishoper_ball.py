@@ -8,16 +8,16 @@ Instead of alpha we choose dPdpsi
 
 import os
 import sys
-import pdb
-import numpy as np
 import pickle
-from inspect import currentframe, getframeinfo
 import multiprocessing as mp
-from scipy.interpolate import CubicSpline as cubspl
+from inspect import currentframe, getframeinfo
+
+import numpy as np
 from scipy.sparse.linalg import eigs
+from matplotlib import pyplot as plt
 
 # from matplotlib import pyplot as plt
-from utils import *
+from utils import reflect_n_append
 
 bishop_dict = sys.argv[1]
 
@@ -78,9 +78,6 @@ def check_ball(shat_n, dPdpsi_n):
     dpsi_dr_ex = -R_ex * B_p_ex
     dqdr_n = dqdpsi_n * dpsi_dr_ex
     dtdr_st_n = -(aprime_n + dqdr_n * theta_st_com_ex) / qfac
-    gradpar_n = (
-        a_N / (B_ex) * (-B_p_ex) * (dt_st_l_ex / dl_ex)
-    )  # gradpar is b.grad(theta)
 
     gds2_n = (
         (dpsidrho) ** 2
@@ -93,11 +90,6 @@ def check_ball(shat_n, dPdpsi_n):
         * 1
         / (a_N * B_N) ** 2
     )
-    gds21_n = (
-        dpsidrho * dqdpsi_n * dpsidrho * (dpsi_dr_ex * aprime_n) / (a_N * B_N) ** 2
-    )
-    gds22_n = (dqdpsi_n * dpsidrho) ** 2 * np.abs(dpsi_dr_ex) ** 2 / (a_N * B_N) ** 2
-    # pdb.set_trace()
     dBdr_bish_n = (
         B_p_ex
         / B_ex
@@ -111,22 +103,14 @@ def check_ball(shat_n, dPdpsi_n):
         -2 / B_ex * dBdr_bish_n / dpsi_dr_ex
         + 2 * aprime_n * F / R_ex * 1 / B_ex**3 * dBl_ex / dl_ex
     )
-    dPdr_n = dPdpsi_n * dpsi_dr_ex
     cvdrift_n = dpsidrho / np.abs(B_ex) * (-2 * (2 * dPdpsi_n / (2 * B_ex))) + gbdrift_n
-    gbdrift0_n = 1 * 2 / (B_ex**3) * dpsidrho * F / R_ex * (dqdr_n * dBl_ex / dl_ex)
 
     R_ball = reflect_n_append(R_ex, "e") / a_N
     B_ball = reflect_n_append(B_ex, "e") / B_N
     theta_ball = reflect_n_append(theta_st_com_ex, "o")
-    gradpar_ball = reflect_n_append(gradpar_n, "e")
     cvdrift_ball = reflect_n_append(cvdrift_n, "e")
-    gbdrift_ball = reflect_n_append(gbdrift_n, "e")
-    gbdrift0_ball = reflect_n_append(gbdrift0_n, "o")
     gds2_ball = reflect_n_append(gds2_n, "e")
-    gds21_ball = reflect_n_append(gds21_n, "o")
-    gds22_ball = reflect_n_append(gds22_n, "e")
     ntheta = len(theta_ball)
-    # pdb.set_trace()
 
     delthet = np.diff(theta_ball)
     diff = 0.0
@@ -155,8 +139,6 @@ def check_ball(shat_n, dPdpsi_n):
         ch[i] = 0.5 * (c[i] + c[i - 1])
         gh[i] = 0.5 * (g[i] + g[i - 1])
         fh[i] = 0.5 * (f[i] + f[i - 1])
-
-    cflmax = np.max(np.abs(delthet**2 * ch[1:] / gh[1:]))
 
     c1 = np.zeros((ntheta,))
     f1 = np.zeros((ntheta,))
@@ -203,7 +185,6 @@ def check_ball(shat_n, dPdpsi_n):
     gamma = 0
     # for ig in np.arange(int((ntheta-1)/2),ntheta-1):
     for ig in np.arange(1, ntheta - 1):
-        # pdb.set_trace()
         psi_prime = (
             psi_prime
             + 1 * c1[ig] * psi_t[ig]
@@ -212,7 +193,6 @@ def check_ball(shat_n, dPdpsi_n):
         )
         psi_t[ig + 1] = (g1[ig + 1] * psi_t[ig] + psi_prime) * g2[ig + 1]
 
-    # pdb.set_trace()
     if np.isnan(np.sum(psi_t)) or np.isnan(np.abs(psi_prime)):
         print("warning NaN  balls")
 
@@ -255,11 +235,6 @@ def gamma_ball(shat_n, dPdpsi_n):
         * 1
         / (a_N * B_N) ** 2
     )
-    gds21_n = (
-        dpsidrho * dqdpsi_n * dpsidrho * (dpsi_dr_ex * aprime_n) / (a_N * B_N) ** 2
-    )
-    gds22_n = (dqdpsi_n * dpsidrho) ** 2 * np.abs(dpsi_dr_ex) ** 2 / (a_N * B_N) ** 2
-    # pdb.set_trace()
     dBdr_bish_n = (
         B_p_ex
         / B_ex
@@ -273,26 +248,16 @@ def gamma_ball(shat_n, dPdpsi_n):
         -2 / B_ex * dBdr_bish_n / dpsi_dr_ex
         + 2 * aprime_n * F / R_ex * 1 / B_ex**3 * dBl_ex / dl_ex
     )
-    dPdr_n = dPdpsi_n * dpsi_dr_ex
     cvdrift_n = dpsidrho / np.abs(B_ex) * (-2 * (2 * dPdpsi_n / (2 * B_ex))) + gbdrift_n
-    gbdrift0_n = 1 * 2 / (B_ex**3) * dpsidrho * F / R_ex * (dqdr_n * dBl_ex / dl_ex)
 
-    R_ball = reflect_n_append(R_ex, "e") / a_N
     B_ball = reflect_n_append(B_ex, "e") / B_N
     theta_ball = reflect_n_append(theta_st_com_ex, "o")
 
     gradpar_ball = reflect_n_append(gradpar_n, "e")
     cvdrift_ball = reflect_n_append(cvdrift_n, "e")
-    gbdrift_ball = reflect_n_append(gbdrift_n, "e")
-    gbdrift0_ball = reflect_n_append(gbdrift0_n, "o")
     gds2_ball = reflect_n_append(gds2_n, "e")
-    gds21_ball = reflect_n_append(gds21_n, "o")
-    gds22_ball = reflect_n_append(gds22_n, "e")
-    ntheta = len(theta_ball)
-    # pdb.set_trace()
 
     # initial value integrator
-    delthet = np.diff(theta_ball)
     # Note that gds2 is (dpsidrho*|grad alpha|/(a_N*B_N))**2.
     # All the variables of the type *_ball have been normalized
     # g = gds2_ball/((R_ball*B_ball)**2)
@@ -312,17 +277,12 @@ def gamma_ball(shat_n, dPdpsi_n):
     )
     f = gds2_ball / B_ball**2 * 1 / (np.abs(gradpar_ball) * B_ball)
 
-    g_spl = cubspl(theta_ball, g)
-    c_spl = cubspl(theta_ball, c)
-    f_spl = cubspl(theta_ball, f)
-    # pdb.set_trace()
     len1 = 4 * int(len(g))
     len2 = int((len1 - 1) / 2)
 
     # Uniform half theta ball
 
     theta_ball_u = np.linspace(theta_ball[0], theta_ball[-1], len1)
-    g_u = np.interp(theta_ball_u, theta_ball, g)
     c_u = np.interp(theta_ball_u, theta_ball, c)
     f_u = np.interp(theta_ball_u, theta_ball, f)
 
@@ -336,7 +296,6 @@ def gamma_ball(shat_n, dPdpsi_n):
     c_u1 = c_u[len2:]
     f_u1 = f_u[len2:]
     A = np.zeros((len2, len2))
-    M = np.zeros((len2, len2))
 
     for i in range(len2):
         if i == 0:
@@ -369,7 +328,6 @@ def gamma_ball(shat_n, dPdpsi_n):
     # faster compared to np.linalg.eig
     w, v = eigs(A, 3, sigma=1.0, tol=1e-8, OPpart="r")
     idx_max = np.where(w == np.max(w))[0]
-    # pdb.set_trace()
     # plt.plot(theta_ball_u[theta_ball_u>0][1:], v[:, idx_max]); plt.show()
     return w[idx_max][0].real
 
@@ -390,9 +348,9 @@ else:
 
 
 # No of shat points
-len1 = 100
+len1 = 10
 # No of alpha_MHD(proportional to dpdpsi) points
-len2 = 100
+len2 = 10
 shat_grid = np.linspace(-3, 10, len1)
 dp_dpsi_grid = np.linspace(0, 2, len2)
 
@@ -440,8 +398,6 @@ results2 = np.array(
 for i in range(len2):
     ball_scan_arr2[:, i] = np.array([results2[i, j].get() for j in range(len1)])
 
-
-from matplotlib import pyplot as plt
 
 X, Y = np.meshgrid(shat_grid, dp_dpsi_grid)
 cs = plt.contour(X.T, Y.T, ball_scan_arr1, levels=[0.0])
