@@ -5,17 +5,23 @@ the geometric coefficients required for a gyrokinetics run (with GX/GS2).
 """
 import os
 import re
-import pdb
-import numpy as np
 import pickle
+
+import numpy as np
 from netCDF4 import Dataset
 from scipy.integrate import cumtrapz as ctrap
 from scipy.interpolate import CubicSpline as cubspl
 from scipy.signal import savgol_filter as sf
 
-# from matplotlib import pyplot as plt
-from inspect import currentframe, getframeinfo
-from utils import *
+from utils import (
+    half_full_combine,
+    ifft_routine,
+    extract_essence,
+    derm,
+    dermv,
+    find_peaks,
+    nperiod_data_extend,
+)
 
 parnt_dir_nam = os.path.dirname(os.getcwd())
 
@@ -33,7 +39,7 @@ with open(fname_in_txt, "r") as f:
             value, _ = value.split("\n")
             # value = value.strip('\n')
             if name != "vmec_fname":
-                len1 = len(re.findall("\d+.\d*", value))
+                len1 = len(re.findall(r"\d+.\d*", value))
             else:
                 len1 = 0
 
@@ -46,11 +52,11 @@ with open(fname_in_txt, "r") as f:
                     variables[name] = eval(
                         value.replace(" ", "")
                     )  # remove any spaces in the names
-                except:
+                except Exception:
                     variables[name] = value.replace(
                         " ", ""
                     )  # remove any spaces in the names
-        except:
+        except Exception:
             continue
 
 
@@ -67,7 +73,7 @@ high_res_fac = 42
 
 try:
     pres_scale = eval(vmec_fname.split("_")[-1])
-except:
+except Exception:
     pres_scale = 0
 
 # get the type of eqbm, i.e., Miller and/or negtri/postri
@@ -94,9 +100,9 @@ if totl_surfs < surf_max:
 fac = int(2)
 
 
-###########################################################
-##########----------IMPORTING VMEC DATA----------##########
-###########################################################
+# ===========================================================
+# ==========----------IMPORTING VMEC DATA----------==========
+# ===========================================================
 
 P_half = 4 * np.pi * 1e-7 * rtg.variables["pres"][:].data
 P_full = 4 * np.pi * 1e-7 * rtg.variables["presf"][:].data
@@ -161,7 +167,6 @@ psi = psi / (2 * np.pi)
 psi_LCFS = psi_LCFS / (2 * np.pi)
 
 psi_half = psi_half / (2 * np.pi)
-# pdb.set_trace()
 
 psi = psi_LCFS - psi  # shift and flip sign to ensure consistency b/w VMEC & anlyticl
 psi_half = (
@@ -328,15 +333,18 @@ for i in range(no_of_surfs):
     if i == 0:
         B_theta_vmec_2[i] = np.zeros((idx0 + 1,))
     else:
+        # This B_theta is calculated using a different method.
+        # It must be equal to B_theta_vmec.
         B_theta_vmec_2[i] = np.sqrt(
             B[i] ** 2 - (F[i] / R[i]) ** 2
-        )  # This B_theta is calculated using a different method. It must be equal to B_theta_vmec.
-        # It is important to note that the interpolated R must be in between the full-grid Rs.
+        )
+        # It is important to note that the interpolated R must be in between the
+        # full-grid Rs.
 
 
-#########################################################################
-##########----------PRIMARY LOWEST LEVEL CALCULATIONS----------##########
-#########################################################################
+# =========================================================================
+# ==========----------PRIMARY LOWEST LEVEL CALCULATIONS----------==========
+# =========================================================================
 
 psi = psi_half
 F_half_2 = np.abs(
@@ -392,7 +400,6 @@ B_p = B_theta_vmec
 # Setting the 0th element to 0. Sometimes it's 1E-17
 theta_st[:, 0] = np.zeros((no_of_surfs,))
 theta_st_com = theta_st[int(no_of_surfs / 2) - 1].copy()
-# pdb.set_trace()
 
 B_original = B[int(no_of_surfs / 2) - 1].copy()
 # B_local_max_0_idx =np.where(B_original[:3] == np.max(B_original[:3]))[0][0]
@@ -409,7 +416,6 @@ else:
 override1 = 0
 local_minimas = find_peaks(-B_original[B_local_max_0_idx:])[0]
 
-# pdb.set_trace()
 if len(local_minimas) > 0 and override1 == 0:
     mag_well = "True"
 else:
@@ -424,7 +430,6 @@ print(
     "Note that theta_st is not uniformly spaced so derm can't be central difference.\n"
     "Using 2nd order non-uniform FD on a non-uniform grid"
 )
-# pdb.set_trace()
 
 
 for i in range(0, no_of_surfs):
@@ -510,9 +515,9 @@ spl_st_to_col_theta = cubspl(theta_st_com, theta[theta >= 0])
 spl_st_to_geo_theta = cubspl(theta_st_com, theta_geo[int(no_of_surfs / 2) - 1])
 
 
-############################################################
-##########----------EIKCOEFS CALCULATION----------##########
-############################################################
+# ============================================================
+# ==========----------EIKCOEFS CALCULATION----------==========
+# ============================================================
 
 
 rel_surf_idx = (
@@ -636,7 +641,6 @@ aprime = -(np.reshape(q_vmec_half, (-1, 1)) * dtdr_st_ex + dqdr_ex * theta_st_co
 # )
 # plt.legend(['aprime_fd', 'aprime_bish_corr', 'aprime_bish'])
 # plt.show()
-# pdb.set_trace()
 
 B_ex = nperiod_data_extend(B[rel_surf_idx], nperiod)
 B_ex_original = nperiod_data_extend(B_original, nperiod)
@@ -710,7 +714,6 @@ dB_dr = (
 )
 
 # plt.plot(theta_st_com_ex, dB_dr[0], theta_st_com_ex, dBdr_bish[2]); plt.show()
-# pdb.set_trace()
 
 # gbdrift_bish = dpsidrho/(B_ex**3)*(
 #     -2*B_ex**2*dBdr_bish/dpsi_dr_ex
@@ -803,7 +806,6 @@ bishop_dict = {
 #     "rhoc=",
 #     (np.max(R[rel_surf_idx])-np.min(R[rel_surf_idx]))/(np.max(R_LCFS)-np.min(R_LCFS))
 # )
-# pdb.set_trace()
 
 # saving bishop dict only once
 if want_to_ball_scan == 1 or want_to_save_GS2 == 1 or want_foms == 1:
