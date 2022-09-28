@@ -16,7 +16,7 @@ from utils import (
 )
 
 
-def plot_profiles(vmec_filename: Path, output_dir: Path) -> None:
+def plot_profiles(vmec_filename: Path, output_dir: Path = Path(".")) -> None:
 
     rtg = nc.Dataset(vmec_filename, "r")
 
