@@ -335,9 +335,7 @@ for i in range(no_of_surfs):
     else:
         # This B_theta is calculated using a different method.
         # It must be equal to B_theta_vmec.
-        B_theta_vmec_2[i] = np.sqrt(
-            B[i] ** 2 - (F[i] / R[i]) ** 2
-        )
+        B_theta_vmec_2[i] = np.sqrt(B[i] ** 2 - (F[i] / R[i]) ** 2)
         # It is important to note that the interpolated R must be in between the
         # full-grid Rs.
 
@@ -436,9 +434,7 @@ for i in range(0, no_of_surfs):
     # Interpolation of full grid quantities to a half-grid surfaces requires i - > i-1.
     # theta_st_is naturally on half-grid but R was interpolated (radially) to a
     # half-grid.
-    R[i] = np.interp(
-        theta_st_com, theta_st[i], R[i]
-    )
+    R[i] = np.interp(theta_st_com, theta_st[i], R[i])
     Z[i] = np.interp(theta_st_com, theta_st[i], Z[i])
     B[i] = np.interp(theta_st_com, theta_st[i], B[i])
     B_p[i] = np.interp(theta_st_com, theta_st[i], B_p[i])
@@ -747,9 +743,7 @@ gbdrift0 = (
 cvdrift = dpsidrho / np.abs(B_ex) * (-2 * (2 * dPdpsi / (2 * B_ex))) + gbdrift
 
 # gradpar is b.grad(theta)
-gradpar = (
-    a_N / (R_ex * B_ex) * (-dpsi_dr_ex) * (dt_st_l_ex / dl_ex)
-)
+gradpar = a_N / (R_ex * B_ex) * (-dpsi_dr_ex) * (dt_st_l_ex / dl_ex)
 # gradpar = a_N/(R_ex*B_ex)*(-dpsi_dr_ex)*1/dermv(L_st_ex, theta_st_com_ex, 'l', 'o')
 gradpar_lim = gradpar[theta_st_com_ex <= np.pi]
 B_lim = B_ex[theta_st_com_ex <= np.pi]

@@ -8,12 +8,18 @@ Called from the script eikcoefs_final.py
 
 import os
 import sys
-import pdb
-import numpy as np
 import pickle
+
+import numpy as np
 from scipy.signal import find_peaks
-from netCDF4 import Dataset
-from utils import *
+
+from utils import (
+    nperiod_data_extend,
+    find_optim_theta_arr,
+    symmetrize,
+    reflect_n_append,
+    lambda_create,
+)
 
 bishop_dict = sys.argv[1]
 parnt_dir_nam = os.path.dirname(os.getcwd())
@@ -79,7 +85,6 @@ def bishop_save(shat_n, dPdpsi_n, pfac):
         - b_s[-1] * dPdpsi_n
         + c_s[-1]
     ) / a_s[-1]
-    # pdb.set_trace()
     dqdpsi_n = shat_n * qfac / rho * 1 / dpsidrho
     aprime_n = -R_ex * B_p_ex * (a_s * dFdpsi_n + b_s * dPdpsi_n - c_s) * 0.5
     dpsi_dr_ex = -R_ex * B_p_ex
@@ -104,7 +109,6 @@ def bishop_save(shat_n, dPdpsi_n, pfac):
     )
     gds22_n = (dqdpsi_n * dpsidrho) ** 2 * np.abs(dpsi_dr_ex) ** 2 / (a_N * B_N) ** 2
     grho_n = 1 / dpsidrho * dpsi_dr_ex * a_N
-    # pdb.set_trace()
     dBdr_bish_n = (
         B_p_ex
         / B_ex
@@ -118,7 +122,6 @@ def bishop_save(shat_n, dPdpsi_n, pfac):
         -2 / B_ex * dBdr_bish_n / dpsi_dr_ex
         + 2 * aprime_n * F / R_ex * 1 / B_ex**3 * dBl_ex / dl_ex
     )
-    dPdr_n = dPdpsi_n * dpsi_dr_ex
     cvdrift_n = dpsidrho / np.abs(B_ex) * (-2 * (2 * dPdpsi_n / (2 * B_ex))) + gbdrift_n
     gbdrift0_n = 1 * 2 / (B_ex**3) * dpsidrho * F / R_ex * (dqdr_n * dBl_ex / dl_ex)
 
@@ -264,9 +267,9 @@ def bishop_save(shat_n, dPdpsi_n, pfac):
         del theta_ball[rep_idxs]
         del gradpar_ball[rep_idxs]
         del theta_ball[rep_idxs]
-        del cvdrift_bal[rep_idxs]
+        del cvdrift_ball[rep_idxs]
         del gbdrift_ball[rep_idxs]
-        del gbdrift0_bal[rep_idxs]
+        del gbdrift0_ball[rep_idxs]
         del B_ball[rep_idxs]
         del B_ball[rep_idxs]
         del R_ball[rep_idxs]
@@ -425,7 +428,6 @@ def bishop_save(shat_n, dPdpsi_n, pfac):
     g.writelines(headings[1])
 
     for i in range(nlambda):
-        # pdb.set_trace()
         g.writelines("%.19f\n" % (lambda_arr[i]))
 
     Rmaj = (np.max(R_ex) + np.min(R_ex)) / (2 * a_N)
@@ -444,7 +446,6 @@ def bishop_save(shat_n, dPdpsi_n, pfac):
             qfac,
         )
     )
-    # pdb.set_trace()
 
     for i in np.arange(3, len(headings)):
         g.writelines(headings[i])
