@@ -281,9 +281,7 @@ def bishop_save(shat_n, dPdpsi_n, pfac):
         del gbdrift0_ball[rep_idxs]
         del B_ball[rep_idxs]
         del B_ball[rep_idxs]
-        del R_ball[rep_idxs]  # FIXME Undefined variable!
         del Rprime_ball[rep_idxs]
-        del Z_ball[rep_idxs]  # FIXME Undefined variable!
         del Zprime_ball[rep_idxs]
         del aprime_ball[rep_idxs]
         del aplot_ball[rep_idxs]

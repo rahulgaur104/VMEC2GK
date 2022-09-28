@@ -5,11 +5,28 @@ All the routines required to do the main calculation.
 """
 
 import warnings
+from configparser import ConfigParser
 from textwrap import dedent
 from inspect import currentframe, getframeinfo
+from ast import literal_eval
 
 import numpy as np
 from scipy.signal import find_peaks
+
+
+def parse_input_file(filename):
+    """
+    Read a VMEC2GK input file. See input_files/eikcoefs_final_input.txt for an example.
+    Returns a dict mapping variable names as strings to their associated values.
+    Uses ast.literal_eval to convert the strings obtained from ConfigParser to
+    ints/floats/tuples etc. The config file should have a single header 'VMEC2GK'.
+    """
+    parser = ConfigParser()
+    parser.read(filename)
+    try:
+        return {k: literal_eval(v) for k, v in parser["VMEC2GK"].items()}
+    except KeyError:
+        raise ValueError("VMEC2GK input files should have a single header 'VMEC2GK'")
 
 
 def extract_essence(arr, extract_len, mode=0):
