@@ -7,65 +7,62 @@ Instead of alpha we choose dPdpsi
 """
 
 import os
-import sys
-import pickle
+from typing import Dict, Any
+from pathlib import Path
+from itertools import product
+
 import multiprocessing as mp
 from inspect import currentframe, getframeinfo
 
 import numpy as np
 from scipy.sparse.linalg import eigs
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 
-# from matplotlib import pyplot as plt
 from utils import reflect_n_append
 
-bishop_dict = sys.argv[1]
-
-parnt_dir_nam = os.path.dirname(os.getcwd())
-
-dict_file = open(bishop_dict, "rb")
-bishop_dict = pickle.load(dict_file)
-
-qfac = bishop_dict["qfac"]
-dqdpsi = bishop_dict["dqdpsi"]
-shat = bishop_dict["shat"]
-
-eqbm_type = bishop_dict["eqbm_type"]
-surf_idx = bishop_dict["surf_idx"]
-pres_scale = bishop_dict["pres_scale"]
-
-rho = bishop_dict["rho"]
-dpsidrho = bishop_dict["dpsidrho"]
-
-F = bishop_dict["F"]
-dFdpsi = bishop_dict["dFdpsi"]
-P = bishop_dict["P"]
-dPdpsi = bishop_dict["dPdpsi"]
-
-R_ex = bishop_dict["R_ex"]
-R_c_ex = bishop_dict["R_c_ex"]
-B_p_ex = bishop_dict["B_p_ex"]
-B_ex = bishop_dict["B_ex"]
-
-dtdr_st = bishop_dict["dtdr_st_ex"]
-dt_st_l_ex = bishop_dict["dt_st_l_ex"]
-dBl_ex = bishop_dict["dBl_ex"]
-dl_ex = bishop_dict["dl_ex"]
-u_ML_ex = bishop_dict["u_ML_ex"]
-R_c_ex = bishop_dict["R_c_ex"]
-
-a_N = bishop_dict["a_N"]
-B_N = bishop_dict["B_N"]
-
-theta_st_com_ex = bishop_dict["theta_st"]
-nperiod = bishop_dict["nperiod"]
-
-a_s = bishop_dict["a_s"]
-b_s = bishop_dict["b_s"]
-c_s = bishop_dict["c_s"]
+# TODO: There are a lot of repeated lines extracting data from bishop_dict.
 
 
-def check_ball(shat_n, dPdpsi_n):
+def check_ball(bishop_dict, shat_n, dPdpsi_n):
+
+    qfac = bishop_dict["qfac"]
+    dqdpsi = bishop_dict["dqdpsi"]
+    shat = bishop_dict["shat"]
+
+    eqbm_type = bishop_dict["eqbm_type"]
+    surf_idx = bishop_dict["surf_idx"]
+    pres_scale = bishop_dict["pres_scale"]
+
+    rho = bishop_dict["rho"]
+    dpsidrho = bishop_dict["dpsidrho"]
+
+    F = bishop_dict["F"]
+    dFdpsi = bishop_dict["dFdpsi"]
+    P = bishop_dict["P"]
+    dPdpsi = bishop_dict["dPdpsi"]
+
+    R_ex = bishop_dict["R_ex"]
+    R_c_ex = bishop_dict["R_c_ex"]
+    B_p_ex = bishop_dict["B_p_ex"]
+    B_ex = bishop_dict["B_ex"]
+
+    dtdr_st = bishop_dict["dtdr_st_ex"]
+    dt_st_l_ex = bishop_dict["dt_st_l_ex"]
+    dBl_ex = bishop_dict["dBl_ex"]
+    dl_ex = bishop_dict["dl_ex"]
+    u_ML_ex = bishop_dict["u_ML_ex"]
+    R_c_ex = bishop_dict["R_c_ex"]
+
+    a_N = bishop_dict["a_N"]
+    B_N = bishop_dict["B_N"]
+
+    theta_st_com_ex = bishop_dict["theta_st"]
+    nperiod = bishop_dict["nperiod"]
+
+    a_s = bishop_dict["a_s"]
+    b_s = bishop_dict["b_s"]
+    c_s = bishop_dict["c_s"]
+
     # shat_n = 2.50
     # dPdpsi_n = 1.00
     dFdpsi_n = (
@@ -204,7 +201,46 @@ def check_ball(shat_n, dPdpsi_n):
     return isunstable
 
 
-def gamma_ball(shat_n, dPdpsi_n):
+def gamma_ball(bishop_dict, shat_n, dPdpsi_n):
+
+    qfac = bishop_dict["qfac"]
+    dqdpsi = bishop_dict["dqdpsi"]
+    shat = bishop_dict["shat"]
+
+    eqbm_type = bishop_dict["eqbm_type"]
+    surf_idx = bishop_dict["surf_idx"]
+    pres_scale = bishop_dict["pres_scale"]
+
+    rho = bishop_dict["rho"]
+    dpsidrho = bishop_dict["dpsidrho"]
+
+    F = bishop_dict["F"]
+    dFdpsi = bishop_dict["dFdpsi"]
+    P = bishop_dict["P"]
+    dPdpsi = bishop_dict["dPdpsi"]
+
+    R_ex = bishop_dict["R_ex"]
+    R_c_ex = bishop_dict["R_c_ex"]
+    B_p_ex = bishop_dict["B_p_ex"]
+    B_ex = bishop_dict["B_ex"]
+
+    dtdr_st = bishop_dict["dtdr_st_ex"]
+    dt_st_l_ex = bishop_dict["dt_st_l_ex"]
+    dBl_ex = bishop_dict["dBl_ex"]
+    dl_ex = bishop_dict["dl_ex"]
+    u_ML_ex = bishop_dict["u_ML_ex"]
+    R_c_ex = bishop_dict["R_c_ex"]
+
+    a_N = bishop_dict["a_N"]
+    B_N = bishop_dict["B_N"]
+
+    theta_st_com_ex = bishop_dict["theta_st"]
+    nperiod = bishop_dict["nperiod"]
+
+    a_s = bishop_dict["a_s"]
+    b_s = bishop_dict["b_s"]
+    c_s = bishop_dict["c_s"]
+
     # shat_n = 2.50
     # dPdpsi_n = 1.00
     # nperiod = 2
@@ -220,9 +256,8 @@ def gamma_ball(shat_n, dPdpsi_n):
     dqdr_n = dqdpsi_n * dpsi_dr_ex
     dtdr_st_n = -(aprime_n + dqdr_n * theta_st_com_ex) / qfac
     # dtdr_st_n = dtdr_st[rel_surf_idx]
-    gradpar_n = (
-        a_N / (B_ex) * (-B_p_ex) * (dt_st_l_ex / dl_ex)
-    )  # gradpar is b.grad(theta)
+    # gradpar is b.grad(theta)
+    gradpar_n = a_N / (B_ex) * (-B_p_ex) * (dt_st_l_ex / dl_ex)
 
     gds2_n = (
         (dpsidrho) ** 2
@@ -332,82 +367,104 @@ def gamma_ball(shat_n, dPdpsi_n):
     return w[idx_max][0].real
 
 
-if check_ball(shat, dPdpsi) == 0:
-    print(
-        "The nominal equilibrium is inf-n ideal ballooning stable.\n"
-        "Doing a gamma scan now..."
+def plot_ballooning_scan(
+    bishop_dict: Dict[str, Any],
+    output_dir: Path,
+    num_procs: int = None,
+) -> None:
+
+    qfac = bishop_dict["qfac"]
+    dqdpsi = bishop_dict["dqdpsi"]
+    shat = bishop_dict["shat"]
+
+    eqbm_type = bishop_dict["eqbm_type"]
+    surf_idx = bishop_dict["surf_idx"]
+    pres_scale = bishop_dict["pres_scale"]
+
+    rho = bishop_dict["rho"]
+    dpsidrho = bishop_dict["dpsidrho"]
+
+    F = bishop_dict["F"]
+    dFdpsi = bishop_dict["dFdpsi"]
+    P = bishop_dict["P"]
+    dPdpsi = bishop_dict["dPdpsi"]
+
+    R_ex = bishop_dict["R_ex"]
+    R_c_ex = bishop_dict["R_c_ex"]
+    B_p_ex = bishop_dict["B_p_ex"]
+    B_ex = bishop_dict["B_ex"]
+
+    dtdr_st = bishop_dict["dtdr_st_ex"]
+    dt_st_l_ex = bishop_dict["dt_st_l_ex"]
+    dBl_ex = bishop_dict["dBl_ex"]
+    dl_ex = bishop_dict["dl_ex"]
+    u_ML_ex = bishop_dict["u_ML_ex"]
+    R_c_ex = bishop_dict["R_c_ex"]
+
+    a_N = bishop_dict["a_N"]
+    B_N = bishop_dict["B_N"]
+
+    theta_st_com_ex = bishop_dict["theta_st"]
+    nperiod = bishop_dict["nperiod"]
+
+    a_s = bishop_dict["a_s"]
+    b_s = bishop_dict["b_s"]
+    c_s = bishop_dict["c_s"]
+
+    if check_ball(bishop_dict, shat, dPdpsi) == 0:
+        print(
+            "The nominal equilibrium is inf-n ideal ballooning stable.\n"
+            "Doing a gamma scan now..."
+        )
+    else:
+        print(
+            "The nominal equilibrium is inf-n ideal ballooning unstable.\n"
+            "Doing a gamma scan now..."
+        )
+
+    # gamma_ball(shat, dPdpsi)
+
+    # No of shat points
+    len1 = 10
+    # No of alpha_MHD(proportional to dpdpsi) points
+    len2 = 10
+    shat_grid = np.linspace(-3, 10, len1)
+    dp_dpsi_grid = np.linspace(0, 2, len2)
+
+    # Setting the number of threads to 1. We don't want multithreading.
+    os.environ["OMP_NUM_THREADS"] = "1"
+
+    if num_procs is None:
+        num_procs = mp.cpu_count()
+
+    print(f"Using {num_procs} processes.")
+
+    pool = mp.Pool(processes=num_procs)
+
+    # Marginal stability data
+    ball_scan_arr1 = np.reshape(
+        pool.starmap(
+            check_ball,
+            product([bishop_dict], shat_grid, dp_dpsi_grid),
+        ),
+        (len(shat_grid), len(dp_dpsi_grid)),
     )
-else:
-    print(
-        "The nominal equilibrium is inf-n ideal ballooning unstable.\n"
-        "Doing a gamma scan now..."
+
+    # Growth rate data
+    ball_scan_arr2 = np.reshape(
+        pool.starmap(
+            gamma_ball,
+            product([bishop_dict], shat_grid, dp_dpsi_grid),
+        ),
+        (len(shat_grid), len(dp_dpsi_grid)),
     )
 
-
-# gamma_ball(shat, dPdpsi)
-
-
-# No of shat points
-len1 = 10
-# No of alpha_MHD(proportional to dpdpsi) points
-len2 = 10
-shat_grid = np.linspace(-3, 10, len1)
-dp_dpsi_grid = np.linspace(0, 2, len2)
-
-# to keep the marginal stability data
-ball_scan_arr1 = np.zeros((len1, len2))
-
-# to keep the growth rate data
-ball_scan_arr2 = np.zeros((len1, len2))
-
-# Setting the number of threads to 1. We don't want multithreading.
-os.environ["OMP_NUM_THREADS"] = "1"
-
-nop = int(8)
-
-frameinfo = getframeinfo(currentframe())
-print(
-    f"Using {nop} processes. To change the number of processes go to line "
-    f"{frameinfo.lineno-2} of the bishoper_ball.py routine"
-)
-
-pool = mp.Pool(processes=nop)
-results1 = np.array(
-    [
-        [
-            pool.apply_async(check_ball, args=(shat_grid[i], dp_dpsi_grid[j]))
-            for i in range(len1)
-        ]
-        for j in range(len2)
-    ]
-)
-
-for i in range(len2):
-    ball_scan_arr1[:, i] = np.array([results1[i, j].get() for j in range(len1)])
-
-
-results2 = np.array(
-    [
-        [
-            pool.apply_async(gamma_ball, args=(shat_grid[i], dp_dpsi_grid[j]))
-            for i in range(len1)
-        ]
-        for j in range(len2)
-    ]
-)
-for i in range(len2):
-    ball_scan_arr2[:, i] = np.array([results2[i, j].get() for j in range(len1)])
-
-
-X, Y = np.meshgrid(shat_grid, dp_dpsi_grid)
-cs = plt.contour(X.T, Y.T, ball_scan_arr1, levels=[0.0])
-cs2 = plt.contourf(X.T, Y.T, ball_scan_arr2, cmap="hot")
-plt.colorbar()
-plt.plot(shat, dPdpsi, "x", color="limegreen", mew=5, ms=8)
-rand_idx = 42
-path = "{0}/output_files/s-alpha-plots/{1}-{2}.png".format(
-    parnt_dir_nam, "s-alpha", rand_idx
-)
-plt.savefig("%s" % (path))
-print("balllooning s-alpha curve successfully saved at %s\n" % (path))
-# plt.show()
+    X, Y = np.meshgrid(shat_grid, dp_dpsi_grid)
+    cs = plt.contour(X.T, Y.T, ball_scan_arr1, levels=[0.0])
+    cs2 = plt.contourf(X.T, Y.T, ball_scan_arr2, cmap="hot")
+    plt.colorbar()
+    plt.plot(shat, dPdpsi, "x", color="limegreen", mew=5, ms=8)
+    rand_idx = 42
+    path = output_dir / f"s-alpha-{rand_idx}.png"
+    plt.savefig(path)
+    print("balllooning s-alpha curve successfully saved at %s\n" % (path))

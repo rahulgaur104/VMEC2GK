@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
+The main script, used to coordinate other tasks in the project.
 """
 
-import os
 import pickle
 from pathlib import Path
 
 from eikcoefs_final import vmec_to_bishop
 from bishoper_save_GX import save_gx
 from bishoper_save_GS2 import save_gs2
+from bishoper_ball import plot_ballooning_scan
 from utils import parse_input_file
 
 
@@ -20,11 +21,12 @@ def main(
     save_GX: bool,
     save_GS2: bool,
     ball_scan: bool,
+    pickle_bishop_dict: bool,
     foms: bool,
     output_dir: Path = Path("."),
 ):
     if not any([save_GX, save_GS2, ball_scan]):
-        raise ValueError(
+        raise RuntimeError(
             "No output selected. "
             "Set at least one of 'save_GX', 'save_GS2', 'ball_scan'."
         )
@@ -40,12 +42,9 @@ def main(
         nperiod=nperiod,
     )
 
-    # TODO replace with function call, don't save pickle
-    # saving bishop dict only once
-    if ball_scan == 1 or save_GS2 == 1 or foms == 1:
-        dict_file = open("bishop_dict.pkl", "wb")
-        pickle.dump(bishop_dict, dict_file)
-        dict_file.close()
+    if pickle_bishop_dict:
+        with open("bishop_dict.pkl", "wb") as dict_file:
+            pickle.dump(bishop_dict, dict_file)
 
     if save_GS2 == 1:
         gs2_output_dir = output_dir / "GS2_grid_files"
@@ -57,9 +56,10 @@ def main(
         gx_output_dir.mkdir(exist_ok=True)
         save_gx(bishop_dict, gx_output_dir)
 
-    # TODO replace with function call, don't save pickle
     if ball_scan == 1:
-        os.system("python3 bishoper_ball.py bishop_dict.pkl")
+        ball_scan_output_dir = output_dir / "s-alpha-plots"
+        ball_scan_output_dir.mkdir(exist_ok=True)
+        plot_ballooning_scan(bishop_dict, ball_scan_output_dir)
 
 
 # ===========================
@@ -84,10 +84,11 @@ vmec_filename = input_dir / f"{config['vmec_fname']}.nc"
 surf_idx = config["surf_idx"]
 norm_scheme = config["norm_scheme"]
 nperiod = config["nperiod"]
-save_GX = bool(config["want_to_save_gx"])
-save_GS2 = bool(config["want_to_save_gs2"])
-ball_scan = bool(config["want_to_ball_scan"])
-foms = bool(config["want_foms"])
+save_GX = bool(config.get("want_to_save_gx", False))
+save_GS2 = bool(config.get("want_to_save_gs2", False))
+ball_scan = bool(config.get("want_to_ball_scan", False))
+foms = bool(config.get("want_foms", False))
+pickle_bishop_dict = bool(config.get("want_to_pickle", False))
 
 # Run main function
 main(
@@ -99,5 +100,6 @@ main(
     save_GS2=save_GS2,
     ball_scan=ball_scan,
     foms=foms,
+    pickle_bishop_dict=pickle_bishop_dict,
     output_dir=default_output_dir,
 )

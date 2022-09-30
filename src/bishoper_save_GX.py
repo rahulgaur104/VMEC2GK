@@ -23,6 +23,7 @@ from utils import (
     symmetrize,
 )
 
+
 def save_gx(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
 
     mag_well = bishop_dict["mag_well"]
@@ -70,11 +71,9 @@ def save_gx(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
     b_s = bishop_dict["b_s"]
     c_s = bishop_dict["c_s"]
 
-
     theta_st_com = theta_st_com_ex[theta_st_com_ex <= np.pi]
 
-
-    #TODO Function call depends on many variables outside of its own scope.
+    # TODO Function call depends on many variables outside of its own scope.
     #     Could simply merge with the top level function.
     #     Would be preferable to break into smaller functions defined at module scope.
     def bishop_save(shat_n, dPdpsi_n, pfac):
@@ -106,7 +105,9 @@ def save_gx(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
         gds21_n = (
             dpsidrho * dqdpsi_n * dpsidrho * (dpsi_dr_ex * aprime_n) / (a_N * B_N) ** 2
         )
-        gds22_n = (dqdpsi_n * dpsidrho) ** 2 * np.abs(dpsi_dr_ex) ** 2 / (a_N * B_N) ** 2
+        gds22_n = (
+            (dqdpsi_n * dpsidrho) ** 2 * np.abs(dpsi_dr_ex) ** 2 / (a_N * B_N) ** 2
+        )
         grho_n = 1 / dpsidrho * dpsi_dr_ex * a_N
         dBdr_bish_n = (
             B_p_ex
@@ -121,8 +122,12 @@ def save_gx(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
             -2 / B_ex * dBdr_bish_n / dpsi_dr_ex
             + 2 * aprime_n * F / R_ex * 1 / B_ex**3 * dBl_ex / dl_ex
         )
-        cvdrift_n = dpsidrho / np.abs(B_ex) * (-2 * (2 * dPdpsi_n / (2 * B_ex))) + gbdrift_n
-        gbdrift0_n = 1 * 2 / (B_ex**3) * dpsidrho * F / R_ex * (dqdr_n * dBl_ex / dl_ex)
+        cvdrift_n = (
+            dpsidrho / np.abs(B_ex) * (-2 * (2 * dPdpsi_n / (2 * B_ex))) + gbdrift_n
+        )
+        gbdrift0_n = (
+            1 * 2 / (B_ex**3) * dpsidrho * F / R_ex * (dqdr_n * dBl_ex / dl_ex)
+        )
 
         Rprime_ex = nperiod_data_extend(
             np.sin(u_ML_ex[theta_st_com_ex <= np.pi]), nperiod, istheta=0, par="e"
@@ -156,7 +161,7 @@ def save_gx(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
             print("temp fix at 270 bishoper_save")
             theta_st_com_ex_uniq[0] = 0.0
         # The next 12 lines make sure that the larger theta array is chosen
-        # between [0, np.pi] and [np.pi, 2*np.pi]. Doing so and then extending to 
+        # between [0, np.pi] and [np.pi, 2*np.pi]. Doing so and then extending to
         # nperiod>1 will make the B symmetrix about the global extrema
         # This will symmetrize the theta grid about any local extrema(e.g. negtri_ps100)
         theta1 = theta_st_com_ex_uniq[theta_st_com_ex_uniq >= 0]
@@ -227,7 +232,9 @@ def save_gx(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
                 continue
         temp5.append(theta_st_com_uniq_sym[len(temp4)])
 
-        theta_st_com_ex_uniq_sym = nperiod_data_extend(np.array(temp5), nperiod, istheta=1)
+        theta_st_com_ex_uniq_sym = nperiod_data_extend(
+            np.array(temp5), nperiod, istheta=1
+        )
         R_ex_uniq = np.interp(theta_st_com_ex_uniq_sym, theta_st_com_ex, R_ex)
         Rprime_ex_uniq = np.interp(theta_st_com_ex_uniq_sym, theta_st_com_ex, Rprime_ex)
         Z_ex_uniq = np.interp(theta_st_com_ex_uniq_sym, theta_st_com_ex, Z_ex)
