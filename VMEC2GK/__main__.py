@@ -14,6 +14,7 @@ from VMEC2GK.bishoper_save_GS2 import bishop_to_gs2
 from VMEC2GK.bishoper_ball import plot_ballooning_scan
 from VMEC2GK.utils import parse_input_file
 
+
 def main(
     vmec_filename: Path,
     surf_idx: int,
@@ -63,7 +64,7 @@ def main(
         plot_ballooning_scan(bishop_dict, ball_scan_output_dir)
 
 
-def parse_cmd_line_args(): 
+def parse_cmd_line_args():
     """
     Reads command line arguments and controls the output of the program.
 
@@ -98,27 +99,36 @@ def parse_cmd_line_args():
     parser = ArgumentParser(description=project_description)
 
     # Input file
-    parser.add_argument("-i", "--input_file", type=Path,
-        help="VMEC2GK input file, see 'input_files/eikcoefs_final_input.txt'."
+    parser.add_argument(
+        "-i",
+        "--input_file",
+        type=Path,
+        help="VMEC2GK input file, see 'input_files/eikcoefs_final_input.txt'.",
     )
 
     # VMEC file
-    parser.add_argument("-v", "--vmec_file", type=Path,
-        help="VMEC equilibrium file to process."
+    parser.add_argument(
+        "-v", "--vmec_file", type=Path, help="VMEC equilibrium file to process."
     )
 
     # Eq options
-    parser.add_argument("-s", "--surf_idx", type=int,
+    parser.add_argument(
+        "-s",
+        "--surf_idx",
+        type=int,
         help=dedent(
             """\
             Which flux surface to process. This is set via an integer value, with 0
             being at the magnetic axis and the maximum (detemined by the VMEC file)
             being the 'Last Closed Flux Surface' (LCFS).
             """
-        )
+        ),
     )
 
-    parser.add_argument("-n", "--norm_scheme", type=int,
+    parser.add_argument(
+        "-n",
+        "--norm_scheme",
+        type=int,
         help=dedent(
             """\
             Sets length normalisation. If set to 1, a_N is effective minor radius of the
@@ -127,25 +137,36 @@ def parse_cmd_line_args():
             LCFS, such that B_N = F/a_N where F is poloidal current on the local
             equilibrium surface.
             """
-        )
+        ),
     )
 
-    parser.add_argument("-p", "--nperiod", type=int,
-        help="The number of times the flux tube goes around is given by 2*nperiod - 1."
+    parser.add_argument(
+        "-p",
+        "--nperiod",
+        type=int,
+        help="The number of times the flux tube goes around is given by 2*nperiod - 1.",
     )
 
     # Output options
     parser.add_argument("--save_gs2", action="store_true", help="Save GS2 grid file")
+
     parser.add_argument("--save_gx", action="store_true", help="Save GX netCDF4 file")
-    parser.add_argument("--ball_scan", action="store_true",
-        help="Perform s-alpha ballooning stability analysis.")
+
+    parser.add_argument(
+        "--ball_scan",
+        action="store_true",
+        help="Perform s-alpha ballooning stability analysis.",
+    )
+
     parser.add_argument("--foms", action="store_true", help="Currently not in use")
-    parser.add_argument("--pickle", action="store_true",
-        help="Save intermediate data as a pickle file")
+
+    parser.add_argument(
+        "--pickle", action="store_true", help="Save intermediate data as a pickle file"
+    )
 
     # Get command line args
     cmd_line_args = parser.parse_args()
-    
+
     # If the user provided an input file, read that into results. If not provided, fall
     # back on defaults
     input_file = cmd_line_args.input_file
@@ -161,6 +182,7 @@ def parse_cmd_line_args():
             args[key] = value
 
     return args
+
 
 # ===========================
 # main script
