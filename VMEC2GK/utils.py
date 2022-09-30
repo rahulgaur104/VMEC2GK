@@ -7,6 +7,7 @@ All the routines required to do the main calculation.
 import warnings
 from configparser import ConfigParser
 from textwrap import dedent
+from pathlib import Path
 from inspect import currentframe, getframeinfo
 from ast import literal_eval
 
@@ -24,9 +25,16 @@ def parse_input_file(filename):
     parser = ConfigParser()
     parser.read(filename)
     try:
-        return {k: literal_eval(v) for k, v in parser["VMEC2GK"].items()}
+        results = {k: literal_eval(v) for k, v in parser["VMEC2GK"].items()}
     except KeyError:
         raise ValueError("VMEC2GK input files should have a single header 'VMEC2GK'")
+    # vmec file and output dir should be relative to the input file
+    input_dir = Path(filename).absolute().parent
+    if "vmec_file" in results:
+        results["vmec_file"] = input_dir / f"{results['vmec_file']}.nc"
+    if "output_dir" in results:
+        results["output_dir"] = input_dir / results["output_dir"]
+    return results
 
 
 def extract_essence(arr, extract_len, mode=0):

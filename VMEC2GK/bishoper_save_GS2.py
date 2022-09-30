@@ -23,7 +23,7 @@ from .utils import (
 )
 
 
-def save_gs2(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
+def bishop_to_gs2(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
 
     mag_well = bishop_dict["mag_well"]
     mag_local_peak = bishop_dict["mag_local_peak"]

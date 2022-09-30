@@ -1,7 +1,7 @@
 from .profile_plotter import plot_profiles
 from .eikcoefs_final import vmec_to_bishop
-from .bishoper_save_GS2 import save_gs2
-from .bishoper_save_GX import save_gx
+from .bishoper_save_GS2 import bishop_to_gs2
+from .bishoper_save_GX import bishop_to_gx
 from .bishoper_ball import plot_ballooning_scan
 
 __all__ = [
