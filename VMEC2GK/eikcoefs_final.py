@@ -13,7 +13,7 @@ from scipy.integrate import cumtrapz as ctrap
 from scipy.interpolate import CubicSpline as cubspl
 from scipy.signal import savgol_filter as sf
 
-from utils import (
+from .utils import (
     half_full_combine,
     ifft_routine,
     extract_essence,

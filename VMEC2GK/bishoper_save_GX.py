@@ -1,29 +1,30 @@
 #!/usr/bin/env python3
 """
 This script creates and saves a grid.out file for a GS2 run using local equilibrium data
-from a dictionary. There is also a provision to change shat and dPdpsi locally.
+from a dictionary. There is also provision to change shat and dPdpsi locally.
 
-Called from the script eikcoefs_final.py
+Usually called from eikcoefs_final_nperiod.py. It can be called from terminal too as
+long as there is a dictionary containing all the local equilibrium information.
 """
 
 import os
 import sys
-from typing import Dict, Any
+import pickle
+from typing import Any, Dict
 from pathlib import Path
 
 import numpy as np
-from scipy.signal import find_peaks
+import netCDF4 as nc
 
-from utils import (
+from .utils import (
     nperiod_data_extend,
     find_optim_theta_arr,
-    symmetrize,
     reflect_n_append,
-    lambda_create,
+    symmetrize,
 )
 
 
-def save_gs2(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
+def save_gx(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
 
     mag_well = bishop_dict["mag_well"]
     mag_local_peak = bishop_dict["mag_local_peak"]
@@ -77,6 +78,7 @@ def save_gs2(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
     #     Would be preferable to break into smaller functions defined at module scope.
     def bishop_save(shat_n, dPdpsi_n, pfac):
 
+        dPdpsi_n = pfac * dPdpsi_n
         dFdpsi_n = (
             -shat_n * 2 * np.pi * (2 * nperiod - 1) * qfac / (rho * dpsidrho)
             - b_s[-1] * dPdpsi_n
@@ -87,9 +89,8 @@ def save_gs2(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
         dpsi_dr_ex = -R_ex * B_p_ex
         dqdr_n = dqdpsi_n * dpsi_dr_ex
         dtdr_st_n = -(aprime_n + dqdr_n * theta_st_com_ex) / qfac
-        gradpar_n = np.abs(
-            a_N / (B_ex) * (-B_p_ex) * (dt_st_l_ex / dl_ex)
-        )  # gradpar is b.grad(theta)
+        # gradpar is b.grad(theta)
+        gradpar_n = np.abs(a_N / (B_ex) * (-B_p_ex) * (dt_st_l_ex / dl_ex))
         gds2_n = (
             (dpsidrho) ** 2
             * (
@@ -134,6 +135,8 @@ def save_gs2(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
         Zprime_ex = -nperiod_data_extend(
             np.cos(u_ML_ex[theta_st_com_ex <= np.pi]), nperiod, istheta=0, par="o"
         )
+        jacob_n = -dpsidrho / (a_N**2 * B_ex * gradpar_n)
+        aplot_n = -qfac * theta_st_com_ex
 
         if nperiod == 1:
             theta_st_com_ex_uniq = theta_st_com_ex
@@ -157,7 +160,6 @@ def save_gs2(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
         if theta_st_com_ex_uniq[0] != 0:
             print("temp fix at 270 bishoper_save")
             theta_st_com_ex_uniq[0] = 0.0
-
         # The next 12 lines make sure that the larger theta array is chosen
         # between [0, np.pi] and [np.pi, 2*np.pi]. Doing so and then extending to
         # nperiod>1 will make the B symmetrix about the global extrema
@@ -174,9 +176,9 @@ def save_gs2(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
             theta2 = np.abs(theta2 - 2 * np.pi)[::-1]
             theta_st_com_uniq_sym = theta2
 
-        # if there is a magnetic well symmetrize provides a theta grid(temp1) corresponding
-        # to symmetric B values which can replace the theta grid in the well from
-        # theta_st_com_uniq_sym
+        # if there is a magnetic well symmetrize provides a theta grid(temp1)
+        # corresponding to symmetric B values which can replace the theta grid in the
+        # well from theta_st_com_uniq_sym
         override1 = 0
         if mag_well == "True" and override1 == 0:
             override0 = 0
@@ -186,7 +188,7 @@ def save_gs2(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
                 #     np.interp(theta_st_com[B_local_max_0_idx:],
                 #     theta_st_com_ex, B_ex),
                 #     mode=2,
-                #     spacing=3,
+                #     spacing=3
                 # )
                 temp1, _ = symmetrize(
                     theta_st_com[B_local_max_0_idx:],
@@ -237,6 +239,8 @@ def save_gs2(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
         Rprime_ex_uniq = np.interp(theta_st_com_ex_uniq_sym, theta_st_com_ex, Rprime_ex)
         Z_ex_uniq = np.interp(theta_st_com_ex_uniq_sym, theta_st_com_ex, Z_ex)
         Zprime_ex_uniq = np.interp(theta_st_com_ex_uniq_sym, theta_st_com_ex, Zprime_ex)
+        jacob_ex_uniq = np.interp(theta_st_com_ex_uniq_sym, theta_st_com_ex, jacob_n)
+        aplot_ex_uniq = np.interp(theta_st_com_ex_uniq_sym, theta_st_com_ex, aplot_n)
         B_ex_uniq = np.interp(theta_st_com_ex_uniq_sym, theta_st_com_ex, B_ex)
         aprime_ex_uniq = np.interp(theta_st_com_ex_uniq_sym, theta_st_com_ex, aprime_n)
         gradpar_uniq = np.interp(theta_st_com_ex_uniq_sym, theta_st_com_ex, gradpar_n)
@@ -248,6 +252,9 @@ def save_gs2(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
         gds22_uniq = np.interp(theta_st_com_ex_uniq_sym, theta_st_com_ex, gds22_n)
         grho_uniq = np.interp(theta_st_com_ex_uniq_sym, theta_st_com_ex, grho_n)
 
+        # plt.plot(theta_st_com_ex_uniq_sym, B_ex_uniq, '-or', ms=2)
+        # plt.show()
+
         gradpar_ball = reflect_n_append(gradpar_uniq, "e")
         theta_ball = reflect_n_append(theta_st_com_ex_uniq_sym, "o")
         cvdrift_ball = reflect_n_append(cvdrift_uniq, "e")
@@ -255,11 +262,13 @@ def save_gs2(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
         gbdrift0_ball = reflect_n_append(gbdrift0_uniq, "o")
         B_ball = reflect_n_append(B_ex_uniq, "e")
         B_ball = B_ball / B_N
-        R_ball = reflect_n_append(R_ex_uniq, "e") / a_N
+        Rplot_ball = reflect_n_append(R_ex_uniq, "e") / a_N
+        jacob_ball = reflect_n_append(jacob_ex_uniq, "e")
         Rprime_ball = reflect_n_append(Rprime_ex_uniq, "e")
-        Z_ball = reflect_n_append(Z_ex_uniq, "o") / a_N
+        Zplot_ball = reflect_n_append(Z_ex_uniq, "o") / a_N
         Zprime_ball = reflect_n_append(Zprime_ex_uniq, "o")
         aprime_ball = reflect_n_append(aprime_ex_uniq, "o")
+        aplot_ball = reflect_n_append(aplot_ex_uniq, "o")
         gds2_ball = reflect_n_append(gds2_uniq, "e")
         gds21_ball = reflect_n_append(gds21_uniq, "o")
         gds22_ball = reflect_n_append(gds22_uniq, "e")
@@ -268,7 +277,7 @@ def save_gs2(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
         # Repetition check
         rep_idxs = np.where(np.diff(theta_ball) == 0)[0]
         if len(rep_idxs) > 0:
-            print("repeated indices found")
+            print("repeated indices found...removing them now")
             del theta_ball[rep_idxs]
             del gradpar_ball[rep_idxs]
             del theta_ball[rep_idxs]
@@ -277,173 +286,104 @@ def save_gs2(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
             del gbdrift0_ball[rep_idxs]
             del B_ball[rep_idxs]
             del B_ball[rep_idxs]
-            del R_ball[rep_idxs]
             del Rprime_ball[rep_idxs]
-            del Z_ball[rep_idxs]
             del Zprime_ball[rep_idxs]
             del aprime_ball[rep_idxs]
+            del aplot_ball[rep_idxs]
             del gds2_ball[rep_idxs]
             del gds21_ball[rep_idxs]
             del gds22_ball[rep_idxs]
             del grho_ball[rep_idxs]
 
+        # ==================================================
+        # ==========----------GX_NC_SAVE----------==========
+        # ==================================================
+
         ntheta = len(theta_ball)
-        data = np.zeros((ntheta + 1, 10))
-        A1 = []
-        A2 = []
-        A3 = []
-        A4 = []
-        A5 = []
-        A6 = []
-        A7 = []
-        A8 = []
+        ntheta2 = ntheta - 1
+        theta_ball2 = np.delete(theta_ball, int(ntheta) - 1)
+        gradpar_sav = np.interp(theta_ball2, theta_ball, gradpar_ball)
+        bmag_sav = np.interp(theta_ball2, theta_ball, B_ball)
+        grho_sav = np.interp(theta_ball2, theta_ball, grho_ball)
+        gbdrift_sav = np.interp(theta_ball2, theta_ball, gbdrift_ball)
+        gbdrift0_sav = np.interp(theta_ball2, theta_ball, gbdrift0_ball)
+        cvdrift_sav = np.interp(theta_ball2, theta_ball, cvdrift_ball)
+        gds21_sav = np.interp(theta_ball2, theta_ball, gds21_ball)
+        gds2_sav = np.interp(theta_ball2, theta_ball, gds2_ball)
+        gds22_sav = np.interp(theta_ball2, theta_ball, gds22_ball)
 
-        for i in range(ntheta + 1):
-            if i == 0:
-                data[0, :5] = np.array([int((ntheta - 1) / 2), 0.0, shat, 1.0, qfac])
-            else:
-                data[i, :] = np.array(
-                    [
-                        theta_ball[i - 1],
-                        B_ball[i - 1],
-                        gradpar_ball[i - 1],
-                        gds2_ball[i - 1],
-                        gds21_ball[i - 1],
-                        gds22_ball[i - 1],
-                        cvdrift_ball[i - 1],
-                        gbdrift0_ball[i - 1],
-                        gbdrift_ball[i - 1],
-                        gbdrift0_ball[i - 1],
-                    ]
-                )  # two gbdrift0's because cvdrift0=gbdrift0
+        Rplot_sav = np.interp(theta_ball2, theta_ball, Rplot_ball)
+        Zplot_sav = np.interp(theta_ball2, theta_ball, Zplot_ball)
+        jacob_sav = np.interp(theta_ball2, theta_ball, jacob_ball)
+        aplot_sav = np.interp(theta_ball2, theta_ball, aplot_ball)
+        Rprime_sav = np.interp(theta_ball2, theta_ball, Rprime_ball)
+        Zprime_sav = np.interp(theta_ball2, theta_ball, Zprime_ball)
+        aprime_sav = np.interp(theta_ball2, theta_ball, aprime_ball)
 
-                A2.append(
-                    "    %.9f    %.9f    %.9f    %.9f\n"
-                    % (
-                        gbdrift_ball[i - 1],
-                        gradpar_ball[i - 1],
-                        grho_ball[i - 1],
-                        theta_ball[i - 1],
-                    )
-                )
-                A3.append(
-                    "    %.9f    %.9f    %.12f    %.9f\n"
-                    % (
-                        cvdrift_ball[i - 1],
-                        gds2_ball[i - 1],
-                        B_ball[i - 1],
-                        theta_ball[i - 1],
-                    )
-                )
-                A4.append(
-                    "    %.9f    %.9f    %.9f\n"
-                    % (gds21_ball[i - 1], gds22_ball[i - 1], theta_ball[i - 1])
-                )
-                A5.append(
-                    "    %.9f    %.9f    %.9f\n"
-                    % (gbdrift0_ball[i - 1], gbdrift0_ball[i - 1], theta_ball[i - 1])
-                )
-                A6.append(
-                    "    %.9f    %.9f    %.9f\n"
-                    % (R_ball[i - 1], Rprime_ball[i - 1], theta_ball[i - 1])
-                )
-                A7.append(
-                    "    %.9f    %.9f    %.9f\n"
-                    % (Z_ball[i - 1], Zprime_ball[i - 1], theta_ball[i - 1])
-                )
-                A8.append(
-                    "    %.9f    %.9f    %.9f\n"
-                    % (
-                        -qfac * reflect_n_append(theta_st_com_ex_uniq_sym, "o")[i - 1],
-                        aprime_ball[i - 1],
-                        theta_ball[i - 1],
-                    )
-                )
-
-        A1.append([A2, A3, A4, A5, A6, A7, A8])
-        A1 = A1[0]
-        if mag_well == "True":
-            temp1 = find_peaks(-B_ex_uniq[theta_st_com_ex_uniq_sym <= np.pi])[0]
-            assert len(temp1) == 1, "something wrong with the mag_well(bishoper_save)"
-            nlambda = len(
-                lambda_create(
-                    B_ex_uniq[theta_st_com_ex_uniq_sym <= np.pi][temp1.item() :]
-                )
-            )
-            lambda_arr = lambda_create(
-                B_ex_uniq[theta_st_com_ex_uniq_sym <= np.pi][temp1.item() :] / B_N
-            )
-
-        else:
-            nlambda = len(lambda_create(B_ball))
-            lambda_arr = lambda_create(B_ball)
-
-        lambda_look = 0
-        if lambda_look == 1:
-            from matplotlib import pyplot as plt
-
-            plt.plot(theta_ball, B_ball, "-sg", ms=3)
-            plt.hlines(1 / lambda_arr, xmin=-10, xmax=10)
-            plt.show()
-
-        char = (
-            f"grid.out_D3D_{eqbm_type}_pres_scale_{pres_scale}_surf_{surf_idx}"
-            f"_nperiod_{nperiod}_nl{nlambda}_nt{len(theta_ball)}"
+        filename = (
+            output_dir
+            / f"gx_out_postri_surf_{int(surf_idx)}_nperiod_{nperiod}_nt{ntheta2}.nc"
         )
-        if isinstance(pfac, int) != 1:
-            before_dec = str(pfac).split(".")[0]
-            after_dec = str(pfac).split(".")[1]
-            name_suffix = f"{before_dec}p{after_dec}"
-            fname_in_txt_rescaled = output_dir / f"{char}_eikcoefs_{name_suffix}"
-        else:
-            fname_in_txt_rescaled = output_dir / f"{char}_eikcoefs_{pfac}_dPspsi"
 
-        with open(fname_in_txt_rescaled, "w") as g:
-            headings = [
-                "nlambda\n",
-                "lambda\n",
-                "ntgrid nperiod ntheta drhodpsi rmaj shat kxfac q\n",
-                "gbdrift gradpar grho tgrid\n",
-                "cvdrift gds2 bmag tgrid\n",
-                "gds21 gds22 tgrid\n",
-                "cvdrift0 gbdrift0 tgrid\n",
-                "Rplot Rprime tgrid\n",
-                "Zplot Zprime tgrid\n",
-                "aplot aprime tgrid\n",
-            ]
-            g.write(headings[0])
-            g.write("%d\n" % (nlambda))
-            g.writelines(headings[1])
+        with nc.Dataset(filename, "w") as ds:
+            ds.createDimension("z", ntheta2)
+            # scalar = ds.createDimension('scalar', 1)
 
-            for i in range(nlambda):
-                g.writelines("%.19f\n" % (lambda_arr[i]))
+            theta_nc = ds.createVariable("theta", "f8", ("z",))
+            bmag_nc = ds.createVariable("bmag", "f8", ("z",))
+            gradpar_nc = ds.createVariable("gradpar", "f8", ("z",))
+            grho_nc = ds.createVariable("grho", "f8", ("z",))
+            gds2_nc = ds.createVariable("gds2", "f8", ("z",))
+            gds21_nc = ds.createVariable("gds21", "f8", ("z",))
+            gds22_nc = ds.createVariable("gds22", "f8", ("z",))
+            gbdrift_nc = ds.createVariable("gbdrift", "f8", ("z",))
+            gbdrift0_nc = ds.createVariable("gbdrift0", "f8", ("z",))
+            cvdrift_nc = ds.createVariable("cvdrift", "f8", ("z",))
+            cvdrift0_nc = ds.createVariable("cvdrift0", "f8", ("z",))
+            jacob_nc = ds.createVariable("jacob", "f8", ("z",))
 
-            Rmaj = (np.max(R_ex) + np.min(R_ex)) / (2 * a_N)
+            Rplot_nc = ds.createVariable("Rplot", "f8", ("z",))
+            Zplot_nc = ds.createVariable("Zplot", "f8", ("z",))
+            aplot_nc = ds.createVariable("aplot", "f8", ("z",))
+            Rprime_nc = ds.createVariable("Rprime", "f8", ("z",))
+            Zprime_nc = ds.createVariable("Zprime", "f8", ("z",))
+            aprime_nc = ds.createVariable("aprime", "f8", ("z",))
 
-            g.writelines(headings[2])
-            g.writelines(
-                "  %d    %d    %d   %0.1f   %0.1f    %.9f   %.1f   %.2f\n"
-                % (
-                    (ntheta - 1) / 2,
-                    1,
-                    (ntheta - 1),
-                    a_N**2 * B_N * np.abs(1 / dpsidrho),
-                    Rmaj,
-                    shat,
-                    a_N**2 * B_N * abs(qfac / rho * dpsidrho),
-                    qfac,
-                )
-            )
+            drhodpsi_nc = ds.createVariable("drhodpsi", "f8")
+            kxfac_nc = ds.createVariable("kxfac", "f8")
+            Rmaj_nc = ds.createVariable("Rmaj", "f8")
+            q = ds.createVariable("q", "f8")
+            shat = ds.createVariable("shat", "f8")
 
-            for i in np.arange(3, len(headings)):
-                g.writelines(headings[i])
-                for j in range(ntheta):
-                    g.write(A1[i - 3][j])
+            theta_nc[:] = theta_ball2
+            bmag_nc[:] = bmag_sav
+            gradpar_nc[:] = gradpar_sav
+            grho_nc[:] = grho_sav
+            gds2_nc[:] = gds2_sav
+            gds21_nc[:] = gds21_sav
+            gds22_nc[:] = gds22_sav
+            gbdrift_nc[:] = gbdrift_sav
+            gbdrift0_nc[:] = gbdrift0_sav
+            cvdrift_nc[:] = cvdrift_sav
+            cvdrift0_nc[:] = gbdrift0_sav
+            jacob_nc[:] = jacob_sav
 
+            Rplot_nc[:] = Rplot_sav
+            Zplot_nc[:] = Zplot_sav
+            aplot_nc[:] = aplot_sav
+
+            Rprime_nc[:] = Rprime_sav
+            Zprime_nc[:] = Zprime_sav
+            aprime_nc[:] = aprime_sav
+
+            drhodpsi_nc[0] = a_N**2 * B_N / dpsidrho
+            kxfac_nc[0] = a_N**2 * B_N * abs(qfac / rho * dpsidrho)
+            Rmaj_nc[0] = (np.max(Rplot_nc) + np.min(Rplot_nc)) / 2 * 1 / (a_N)
+            q[0] = qfac
+            shat[0] = shat_n
+
+            print(f"GX file saved succesfully in the dir {output_dir}")
         return
 
-    pfac = [1.0]
-    for i in range(len(pfac)):
-        bishop_save(shat, pfac[i] * dPdpsi, pfac[i])
-
-    print(f"GS2 file saved succesfully in the dir {output_dir}")
+    pfac = 1.0
+    bishop_save(shat, dPdpsi, pfac)

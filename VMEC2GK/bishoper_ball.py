@@ -18,7 +18,7 @@ import numpy as np
 from scipy.sparse.linalg import eigs
 import matplotlib.pyplot as plt
 
-from utils import reflect_n_append
+from .utils import reflect_n_append
 
 # TODO: There are a lot of repeated lines extracting data from bishop_dict.
 
