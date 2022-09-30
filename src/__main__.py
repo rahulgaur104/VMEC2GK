@@ -7,6 +7,8 @@ import pickle
 from pathlib import Path
 
 from eikcoefs_final import vmec_to_bishop
+from bishoper_save_GX import save_gx
+from bishoper_save_GS2 import save_gs2
 from utils import parse_input_file
 
 
@@ -27,6 +29,10 @@ def main(
             "Set at least one of 'save_GX', 'save_GS2', 'ball_scan'."
         )
 
+    # Ensure output_dir is of type Path, and ensure it exists
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
     bishop_dict = vmec_to_bishop(
         vmec_filename,
         surf_idx=surf_idx,
@@ -41,13 +47,15 @@ def main(
         pickle.dump(bishop_dict, dict_file)
         dict_file.close()
 
-    # TODO replace with function call, don't save pickle
     if save_GS2 == 1:
-        os.system("python3 bishoper_save_GS2.py bishop_dict.pkl")
+        gs2_output_dir = output_dir / "GS2_grid_files"
+        gs2_output_dir.mkdir(exist_ok=True)
+        save_gs2(bishop_dict, gs2_output_dir)
 
-    # TODO replace with function call, don't save pickle
     if save_GX == 1:
-        os.system("python3 bishoper_save_GX.py bishop_dict.pkl")
+        gx_output_dir = output_dir / "GX_nc_files"
+        gx_output_dir.mkdir(exist_ok=True)
+        save_gx(bishop_dict, gx_output_dir)
 
     # TODO replace with function call, don't save pickle
     if ball_scan == 1:
@@ -80,9 +88,6 @@ save_GX = bool(config["want_to_save_gx"])
 save_GS2 = bool(config["want_to_save_gs2"])
 ball_scan = bool(config["want_to_ball_scan"])
 foms = bool(config["want_foms"])
-
-# Make output dir if it doesn't already exist
-default_output_dir.mkdir(parents=True, exist_ok=True)
 
 # Run main function
 main(
