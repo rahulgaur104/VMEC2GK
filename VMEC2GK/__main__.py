@@ -6,11 +6,11 @@ The main script, used to coordinate other tasks in the project.
 import pickle
 from pathlib import Path
 
-from .eikcoefs_final import vmec_to_bishop
-from .bishoper_save_GX import save_gx
-from .bishoper_save_GS2 import save_gs2
-from .bishoper_ball import plot_ballooning_scan
-from .utils import parse_input_file
+from VMEC2GK.eikcoefs_final import vmec_to_bishop
+from VMEC2GK.bishoper_save_GX import save_gx
+from VMEC2GK.bishoper_save_GS2 import save_gs2
+from VMEC2GK.bishoper_ball import plot_ballooning_scan
+from VMEC2GK.utils import parse_input_file
 
 
 def main(
