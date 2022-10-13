@@ -9,7 +9,7 @@ Instead of alpha we choose dPdpsi
 import os
 from typing import Dict, Any
 from pathlib import Path
-from itertools import product
+from itertools import product, repeat
 
 import multiprocessing as mp
 from inspect import currentframe, getframeinfo
@@ -17,13 +17,14 @@ from inspect import currentframe, getframeinfo
 import numpy as np
 from scipy.sparse.linalg import eigs
 import matplotlib.pyplot as plt
+from tqdm.contrib.concurrent import process_map
 
 from .utils import reflect_n_append
 
 # TODO: There are a lot of repeated lines extracting data from bishop_dict.
 
 
-def check_ball(bishop_dict, shat_n, dPdpsi_n):
+def check_ball(shat_n, dPdpsi_n, bishop_dict):
 
     qfac = bishop_dict["qfac"]
     dqdpsi = bishop_dict["dqdpsi"]
@@ -201,7 +202,7 @@ def check_ball(bishop_dict, shat_n, dPdpsi_n):
     return isunstable
 
 
-def gamma_ball(bishop_dict, shat_n, dPdpsi_n):
+def gamma_ball(shat_n, dPdpsi_n, bishop_dict):
 
     qfac = bishop_dict["qfac"]
     dqdpsi = bishop_dict["dqdpsi"]
@@ -411,7 +412,7 @@ def plot_ballooning_scan(
     b_s = bishop_dict["b_s"]
     c_s = bishop_dict["c_s"]
 
-    if check_ball(bishop_dict, shat, dPdpsi) == 0:
+    if check_ball(shat, dPdpsi, bishop_dict) == 0:
         print(
             "The nominal equilibrium is inf-n ideal ballooning stable.\n"
             "Doing a gamma scan now..."
@@ -422,14 +423,15 @@ def plot_ballooning_scan(
             "Doing a gamma scan now..."
         )
 
-    # gamma_ball(shat, dPdpsi)
-
     # No of shat points
     len1 = 10
     # No of alpha_MHD(proportional to dpdpsi) points
     len2 = 10
+
     shat_grid = np.linspace(-3, 10, len1)
     dp_dpsi_grid = np.linspace(0, 2, len2)
+    x_grid, y_grid = np.meshgrid(shat_grid, dp_dpsi_grid, indexing="ij")
+    x, y = x_grid.ravel(), y_grid.ravel()
 
     # Setting the number of threads to 1. We don't want multithreading.
     os.environ["OMP_NUM_THREADS"] = "1"
@@ -439,29 +441,26 @@ def plot_ballooning_scan(
 
     print(f"Using {num_procs} processes.")
 
-    pool = mp.Pool(processes=num_procs)
-
+    print("Running check_ball")
     # Marginal stability data
     ball_scan_arr1 = np.reshape(
-        pool.starmap(
-            check_ball,
-            product([bishop_dict], shat_grid, dp_dpsi_grid),
+        process_map(
+            check_ball, x, y, repeat(bishop_dict), chunksize=1, max_workers=num_procs
         ),
-        (len(shat_grid), len(dp_dpsi_grid)),
+        x_grid.shape,
     )
 
     # Growth rate data
+    print("Running gamma_ball")
     ball_scan_arr2 = np.reshape(
-        pool.starmap(
-            gamma_ball,
-            product([bishop_dict], shat_grid, dp_dpsi_grid),
+        process_map(
+            gamma_ball, x, y, repeat(bishop_dict), chunksize=1, max_workers=num_procs
         ),
-        (len(shat_grid), len(dp_dpsi_grid)),
+        x_grid.shape,
     )
 
-    X, Y = np.meshgrid(shat_grid, dp_dpsi_grid)
-    cs = plt.contour(X.T, Y.T, ball_scan_arr1, levels=[0.0])
-    cs2 = plt.contourf(X.T, Y.T, ball_scan_arr2, cmap="hot")
+    cs = plt.contour(x_grid, y_grid, ball_scan_arr1, levels=[0.0])
+    cs2 = plt.contourf(x_grid, y_grid, ball_scan_arr2, cmap="hot")
     plt.colorbar()
     plt.plot(shat, dPdpsi, "x", color="limegreen", mew=5, ms=8)
     rand_idx = 42
