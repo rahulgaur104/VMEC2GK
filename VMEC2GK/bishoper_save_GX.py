@@ -31,7 +31,7 @@ def bishop_to_gx(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
     B_local_max_0_idx = bishop_dict["B_local_peak"]
 
     eqbm_type = bishop_dict["eqbm_type"]
-    surf_idx = bishop_dict["surf_idx"]
+    surf_idx = int(bishop_dict["surf_idx"])
     pres_scale = bishop_dict["pres_scale"]
 
     qfac = bishop_dict["qfac"]
@@ -322,7 +322,7 @@ def bishop_to_gx(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
 
         filename = (
             output_dir
-            / f"gx_out_postri_surf_{int(surf_idx)}_nperiod_{nperiod}_nt{ntheta2}.nc"
+            / f"gx_out_{eqbm_type}_surf_{surf_idx}_nperiod_{nperiod}_nt_{ntheta2}.nc"
         )
 
         with nc.Dataset(filename, "w") as ds:

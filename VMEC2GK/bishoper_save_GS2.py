@@ -12,6 +12,7 @@ from typing import Dict, Any
 from pathlib import Path
 
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
 
 from .utils import (
@@ -380,23 +381,22 @@ def bishop_to_gs2(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
 
         lambda_look = 0
         if lambda_look == 1:
-            from matplotlib import pyplot as plt
 
             plt.plot(theta_ball, B_ball, "-sg", ms=3)
             plt.hlines(1 / lambda_arr, xmin=-10, xmax=10)
             plt.show()
 
-        char = (
-            f"grid.out_D3D_{eqbm_type}_pres_scale_{pres_scale}_surf_{surf_idx}"
-            f"_nperiod_{nperiod}_nl{nlambda}_nt{len(theta_ball)}"
+        filename = (
+            f"grid.out_{eqbm_type}_pres_scale_{pres_scale}_surf_{surf_idx}"
+            f"_nperiod_{nperiod}_nl_{nlambda}_nt_{len(theta_ball)}"
         )
         if isinstance(pfac, int) != 1:
             before_dec = str(pfac).split(".")[0]
             after_dec = str(pfac).split(".")[1]
             name_suffix = f"{before_dec}p{after_dec}"
-            fname_in_txt_rescaled = output_dir / f"{char}_eikcoefs_{name_suffix}"
+            fname_in_txt_rescaled = output_dir / f"{filename}_eikcoefs_{name_suffix}"
         else:
-            fname_in_txt_rescaled = output_dir / f"{char}_eikcoefs_{pfac}_dPspsi"
+            fname_in_txt_rescaled = output_dir / f"{filename}_eikcoefs_{pfac}_dPspsi"
 
         with open(fname_in_txt_rescaled, "w") as g:
             headings = [
