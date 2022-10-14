@@ -119,9 +119,13 @@ def derm(arr, ch, par="e"):
     Finite difference subroutine
     ch = 'l' means difference along the flux surface
     ch = 'r' mean difference across the flux surfaces
-    par = 'e' means even parity of the arr. PARITY OF THE INPUT ARRAY
-    par = 'o' means odd parity
+    par = 'e' means even parity of arr.
+    par = 'o' means odd parity of arr.
     """
+    # TODO
+    # - could merge 1D and 2D with some clever reshaping
+    # - could avoid repeat code by clever transposing depending on par
+    # - par=='e' and ch=='l' changes boundary handling only, can save some repeat code
     temp = np.shape(arr)
     # finite diff along the flux surface for a single array
     if len(temp) == 1 and ch == "l":
@@ -148,9 +152,8 @@ def derm(arr, ch, par="e"):
         d1, d2 = np.shape(arr)[0], 1
         diff_arr = np.zeros((d1, d2))
         arr = np.reshape(arr, (d1, d2))
-        diff_arr[0, 0] = 2 * (
-            arr[1, 0] - arr[0, 0]
-        )  # single dimension arrays like psi, F and q don't have parity
+        # single dimension arrays like psi, F and q don't have parity
+        diff_arr[0, 0] = 2 * (arr[1, 0] - arr[0, 0])
         diff_arr[-1, 0] = 2 * (arr[-1, 0] - arr[-2, 0])
         diff_arr[1:-1, 0] = np.diff(arr[:-1, 0], axis=0) + np.diff(arr[1:, 0], axis=0)
 
@@ -406,7 +409,7 @@ def find_optim_theta_arr(arr, theta_arr, res_par=-2):
     idx2 = []
     for i in range(rows):
         peaks, _ = find_peaks(arr[i], height=-1e10)
-        peaks = peaks.astype(np.int)
+        peaks = peaks.astype(int)
         idx.append(np.ndarray.tolist(peaks))
         peaks2, _ = find_peaks(-arr[i], height=-1e10)
         idx.append(np.ndarray.tolist(peaks2))
