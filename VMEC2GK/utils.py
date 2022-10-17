@@ -332,6 +332,9 @@ def dermv(arr, brr, ch, par="e"):
 
 def half_full_combine(arrh, arrf):
     """Function to combine data fronm both the half and the full radial meshes"""
+    # TODO Check input arrays have the correct shapes
+    # TODO Speed up: replace for loop with slicing operations
+    #      arr = np.empty(2*len(arrh)-1); arr[::2] = arrf; arr[1::2] = arrh[1:]
     len0 = len(arrh)
     arr = np.zeros((2 * len0 - 1,))
     # Take the first element from array f as the first element of the final array. The
@@ -348,11 +351,14 @@ def half_full_combine(arrh, arrf):
         arr[2 * i - 1] = arrh[i]
 
     arr[2 * len0 - 2] = arrf[len0 - 1]
-
     return arr
 
 
 def nperiod_data_extend(arr, nperiod, istheta=0, par="e"):
+    # TODO raise error if istheta and par=='e'
+    # TODO Could use np.tile to avoid repeated concatenations
+    # TODO behaviour when istheta is True is very different. Could be preferable to
+    # make a new function.
     if nperiod > 1:
         if istheta:  # for istheta par='o'
             arr_dum = arr
@@ -382,6 +388,8 @@ def reflect_n_append(arr, ch):
     [-np.pi,np.pi). ch can either be 'e'(even) or 'o'(odd) depending upon the parity
     of the input array.
     """
+    # TODO for consistency with other functions, should 'ch' be renamed 'par'?
+    # TODO Upgrade for 2D arrays
     rows = 1
     brr = np.zeros((2 * len(arr) - 1,))
     if ch == "e":

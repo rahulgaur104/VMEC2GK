@@ -4,9 +4,20 @@ import pytest
 import numpy as np
 from numpy.testing import assert_allclose, assert_array_equal
 
-from VMEC2GK.utils import extract_essence, derm, dermv
+from VMEC2GK.utils import (
+    extract_essence,
+    derm,
+    dermv,
+    half_full_combine,
+    nperiod_data_extend,
+    reflect_n_append,
+)
 
 # TODO test ifft_routine
+# TODO test find_optim_theta_arr
+# TODO test lambda_create
+# TODO test equalize (Note: not in use as of 6b2eebd)
+# TODO test symmetrize
 
 # -------------------------
 # extract_essence tests
@@ -237,3 +248,77 @@ class TestDerm:
         dim = "x" if ch == "r" else "y"
         expected = self._gaussian_derivative_2d(x, y, mean_x, mean_y, var_x, var_y, dim)
         self._check_results(result, expected, ch, par)
+
+
+# -------------------------
+# half_full_combine tests
+
+
+def test_half_full_combine():
+    x_full = np.linspace(1.0, 51.0, 51)
+    x_half = np.linspace(0.5, 50.5, 51)
+    x_complete = np.linspace(1.0, 51.0, 101)
+    result = half_full_combine(np.sin(x_half), np.sin(x_full))
+    expected = np.sin(x_complete)
+    assert_array_equal(result, expected)
+
+
+# -------------------------
+# nperiod_data_extend tests
+
+
+@pytest.mark.parametrize("nperiod, par", product((3, 5, 10), ("e", "o")))
+def test_nperiod_data_extend_istheta_false(nperiod, par):
+    """
+    Given a periodic function on half of its interval, appends (nperiod - 1) full
+    periods on the end. The endpoints should be included.
+    """
+    # Set up inputs, get results
+    x = np.linspace(0, np.pi, 10)
+    f = np.cos if par == "e" else np.sin
+    result = nperiod_data_extend(f(x), nperiod, istheta=False, par=par)
+    # Get expected results
+    num_half_intervals = 2 * nperiod - 1
+    len_expected = 1 + (len(x) - 1) * num_half_intervals
+    x_expected = np.linspace(0, num_half_intervals * np.pi, len_expected)
+    expected = f(x_expected)
+    # Compare
+    assert_array_equal(result.shape, expected.shape)
+    assert_allclose(result, expected, atol=1e-8)
+
+
+@pytest.mark.parametrize("nperiod", (3, 5, 10))
+def test_nperiod_data_extend_istheta_true(nperiod):
+    """
+    Given a monotonically increasing theta from 0 to pi, appends (nperiod - 1) full
+    intervals of width 2*pi on the end. The spacings need not be uniform, and are
+    reflected in each subsequent half interval.
+    """
+    # Get a non-uniform range of numbers between 0 and pi, get results
+    x = np.linspace(0, np.pi, 10)
+    np.random.seed(0)
+    x[1:-1] += np.pi * (np.random.random_sample((len(x) - 2)) - 0.5) / len(x)
+    result = nperiod_data_extend(x, nperiod, istheta=True)
+    # Build array of expected values
+    dx = np.diff(x)
+    spacings = np.array([0])
+    for ii in range(2 * nperiod - 1):
+        spacings = np.append(spacings, np.flip(dx) if (ii % 2) else dx)
+    expected = np.cumsum(spacings)
+    # Compare
+    assert_array_equal(result.shape, expected.shape)
+    assert_allclose(result, expected, atol=1e-8)
+
+
+# -------------------------
+# reflect_n_append tests
+
+
+@pytest.mark.parametrize("par", ("e", "o"))
+def test_reflect_n_append(par):
+    x = np.linspace(0, np.pi, 11)
+    f = np.sin if par == "o" else np.cos
+    result = reflect_n_append(f(x), par)
+    expected = f(np.linspace(-np.pi, np.pi, 21))
+    assert_array_equal(result.shape, expected.shape)
+    assert_allclose(result, expected, atol=1e-8)
