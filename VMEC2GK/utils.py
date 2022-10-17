@@ -255,9 +255,8 @@ def dermv(arr, brr, ch, par="e"):
         d1, d2 = np.shape(arr)[0], 1
         diff_arr = np.zeros((d1, d2))
         arr = np.reshape(arr, (d1, d2))
-        diff_arr[0, 0] = (
-            2 * (arr[1, 0] - arr[0, 0]) / (2 * (brr[1, 0] - brr[0, 0]))
-        )  # single dimension arrays like psi, F and q don't have parity
+        # single dimension arrays like psi, F and q don't have parity
+        diff_arr[0, 0] = 2 * (arr[1, 0] - arr[0, 0]) / (2 * (brr[1, 0] - brr[0, 0]))
         diff_arr[-1, 0] = (
             2 * (arr[-1, 0] - arr[-2, 0]) / (2 * (brr[-1, 0] - brr[-2, 0]))
         )
