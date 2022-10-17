@@ -190,11 +190,11 @@ def derm(arr, ch, par="e"):
 def dermv(arr, brr, ch, par="e"):
     """
     Finite difference subroutine
-    brr is the independent variable arr. Needed for weighted finite-difference
+    brr is the independent variable array. Needed for weighted finite-difference
     ch = 'l' means difference along the flux surface
     ch = 'r' mean difference across the flux surfaces
-    par = 'e' means even parity of the arr. PARITY OF THE INPUT ARRAY
-    par = 'o' means odd parity
+    par = 'e' means even parity of arr.
+    par = 'o' means odd parity of arr.
     """
     temp = np.shape(arr)
     # finite diff along the flux surface for a single array
