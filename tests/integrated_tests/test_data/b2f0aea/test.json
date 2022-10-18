@@ -3,6 +3,6 @@
     "surf_idx": 200,
     "nperiod": 2,
     "norm_scheme": 2,
-    "gs2_output": "grid.out_D3D_negtri_pres_scale_1_surf_200_nperiod_2_n16_nt43_eikcoefs_1p0",
+    "gs2_output": "grid.out_D3D_negtri_pres_scale_1_surf_200_nperiod_2_nl6_nt43_eikcoefs_1p0",
     "gx_output": "gx_out_postri_surf_200_nperiod_2_nt42.nc"
 }

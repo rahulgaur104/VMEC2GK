@@ -1,12 +1,14 @@
 from pathlib import Path
 from glob import glob
+from itertools import chain
 import json
 
 import pytest
 import numpy as np
 import xarray as xr
+from numpy.testing import assert_array_equal, assert_allclose
 
-from VMEC2GK import vmec_to_bishop, bishop_to_gx
+from VMEC2GK import vmec_to_bishop, bishop_to_gx, bishop_to_gs2, read_gs2_grid_file
 
 
 @pytest.fixture(scope="module")
@@ -37,7 +39,7 @@ def input_data(test_params):
 
 
 @pytest.fixture(scope="module")
-def expected(test_params):
+def expected_gx(test_params):
     """
     Reads GX netcdf of expected data. Should be used to compare against current code
     outputs.
@@ -46,7 +48,28 @@ def expected(test_params):
         return ds.load()
 
 
-def test_vmec_to_gx(tmp_path, input_data, expected):
+@pytest.fixture(scope="module")
+def expected_gs2(test_params):
+    """
+    Reads GS2 grid file of expected data. Should be used to compare against current code
+    outputs.
+    """
+    return read_gs2_grid_file(test_params["gs2_output"])
+
+
+def _check_datasets(actual, expected):
+    # Compare attrs
+    for k, v in expected.attrs.items():
+        assert np.isclose(getattr(actual, k), v, rtol=1e-5, atol=1e-8)
+    # Compare dims and data vars
+    for k in chain(expected.dims, expected.data_vars):
+        # Ensure shapes are the same
+        assert_array_equal(expected[k].shape, actual[k].shape)
+        # Ensure values are close enough
+        assert_allclose(expected[k], actual[k], equal_nan=True, rtol=1e-5, atol=1e-8)
+
+
+def test_vmec_to_gx(tmp_path, input_data, expected_gx):
     # Make directory to store new GX file
     output_dir = tmp_path / "GX_nc_files"
     output_dir.mkdir()
@@ -57,12 +80,17 @@ def test_vmec_to_gx(tmp_path, input_data, expected):
     assert len(output_files) == 1
     # Compare actual to expected
     with xr.open_dataset(output_files[0]) as actual:
-        # Compare dims
-        for key in expected.dims:
-            assert np.array_equal(expected[key], actual[key])
-        # Compare data vars
-        for key in expected.data_vars:
-            # Ensure shapes are the same
-            assert np.array_equal(expected[key].shape, actual[key].shape)
-            # Ensure values are close enough
-            assert np.allclose(expected[key], actual[key], equal_nan=True)
+        _check_datasets(actual, expected_gx)
+
+
+def test_vmec_to_gs2(tmp_path, input_data, expected_gs2):
+    # Make directory to store new GX file
+    output_dir = tmp_path / "GS2_grid_files"
+    output_dir.mkdir()
+    # Create GX file
+    bishop_to_gs2(input_data, output_dir=output_dir)
+    # Ensure file was created successfully
+    output_files = glob(str(output_dir / "grid.out*"))
+    assert len(output_files) == 1
+    # Compare actual to expected
+    _check_datasets(read_gs2_grid_file(output_files[0]), expected_gs2)

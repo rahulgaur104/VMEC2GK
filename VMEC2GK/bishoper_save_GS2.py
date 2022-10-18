@@ -10,8 +10,10 @@ import os
 import sys
 from typing import Dict, Any
 from pathlib import Path
+from ast import literal_eval
 
 import numpy as np
+import xarray as xr
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
 
@@ -447,3 +449,43 @@ def bishop_to_gs2(bishop_dict: Dict[str, Any], output_dir: Path) -> None:
         bishop_save(shat, pfac[i] * dPdpsi, pfac[i])
 
     print(f"GS2 file saved succesfully in the dir {output_dir}")
+
+
+def read_gs2_grid_file(filename: Path):
+    # Read contents into list of strings
+    with open(filename, "r") as f:
+        lines = f.readlines()
+    # Use idx to track which line we're on
+    idx = 0
+    # Get lambda info (first line is just 'nlambda', third is 'lambda')
+    nlambda = int(lines[1])
+    idx += 3
+    lambdas = [float(x) for x in lines[idx : idx + nlambda]]
+    idx += nlambda
+    # Get constants
+    consts = {
+        k: literal_eval(v) for k, v in zip(lines[idx].split(), lines[idx + 1].split())
+    }
+    idx += 2
+    # All further info is expressed in columns of length ntheta + 1
+    ntheta = consts["ntheta"] + 1
+    data = {}
+    while idx < len(lines):
+        headings = lines[idx].split()
+        idx += 1
+        data_str = " ".join(lines[idx : idx + ntheta])
+        data_list = [float(x) for x in data_str.split()]
+        rows = np.array(data_list).reshape(ntheta, len(headings)).T
+        for heading, row in zip(headings, rows):
+            data[heading] = row
+        idx += ntheta
+    # Arrange into xarray Dataset
+    attrs = {"nlambda": nlambda}
+    for k, v in consts.items():
+        attrs[k] = v
+    coords = {
+        "lambda": lambdas,
+        "theta": data["tgrid"],
+    }
+    data_vars = {k: ("theta", v) for k, v in data.items()}
+    return xr.Dataset(data_vars=data_vars, coords=coords, attrs=attrs)
