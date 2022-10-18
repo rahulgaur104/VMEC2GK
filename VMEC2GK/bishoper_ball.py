@@ -15,6 +15,7 @@ import multiprocessing as mp
 from inspect import currentframe, getframeinfo
 
 import numpy as np
+import xarray as xr
 from scipy.sparse.linalg import eigs
 import matplotlib.pyplot as plt
 from tqdm.contrib.concurrent import process_map
@@ -371,6 +372,8 @@ def gamma_ball(shat_n, dPdpsi_n, bishop_dict):
 def plot_ballooning_scan(
     bishop_dict: Dict[str, Any],
     output_dir: Path,
+    len_shat_grid: int = 10,
+    len_dpdpsi_grid: int = 10,
     num_procs: int = None,
 ) -> None:
 
@@ -423,13 +426,10 @@ def plot_ballooning_scan(
             "Doing a gamma scan now..."
         )
 
-    # No of shat points
-    len1 = 10
-    # No of alpha_MHD(proportional to dpdpsi) points
-    len2 = 10
-
-    shat_grid = np.linspace(-3, 10, len1)
-    dp_dpsi_grid = np.linspace(0, 2, len2)
+    # shat points
+    shat_grid = np.linspace(-3, 10, len_shat_grid)
+    # alpha_MHD(proportional to dpdpsi) points
+    dp_dpsi_grid = np.linspace(0, 2, len_dpdpsi_grid)
     x_grid, y_grid = np.meshgrid(shat_grid, dp_dpsi_grid, indexing="ij")
     x, y = x_grid.ravel(), y_grid.ravel()
 
@@ -467,3 +467,17 @@ def plot_ballooning_scan(
     path = output_dir / f"s-alpha-{rand_idx}.png"
     plt.savefig(path)
     print("balllooning s-alpha curve successfully saved at %s\n" % (path))
+
+    # Save and return data as an xarray Dataset
+    dataset = xr.Dataset(
+        coords={
+            "shat": shat_grid,
+            "dpdpsi": dp_dpsi_grid,
+        },
+        data_vars={
+            "marginal_stability": (("shat", "dpdpsi"), ball_scan_arr1),
+            "growth_rate": (("shat", "dpdpsi"), ball_scan_arr2),
+        },
+    )
+    dataset.to_netcdf(output_dir / f"s-alpha-{rand_idx}.nc")
+    return dataset
