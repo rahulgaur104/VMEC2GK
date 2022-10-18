@@ -50,8 +50,7 @@ def expected_gx(test_params):
     Reads GX netcdf of expected data. Should be used to compare against current code
     outputs.
     """
-    with xr.open_dataset(test_params["gx_output"]) as ds:
-        return ds.load()
+    return xr.load_dataset(test_params["gx_output"], engine="netcdf4")
 
 
 @pytest.fixture
@@ -69,8 +68,7 @@ def expected_ball_scan(test_params):
     Reads expected ball scan data file. Should be used to compare against current code
     outputs.
     """
-    with xr.open_dataset(test_params["ball_scan"]) as ds:
-        return ds.load()
+    return xr.load_dataset(test_params["ball_scan"], engine="netcdf4")
 
 
 def _check_datasets(actual, expected):
