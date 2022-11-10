@@ -4,13 +4,14 @@
 # Don't use any character other than space and carriage return(Enter)
 # For the entry vmec_fname, the file that you want to import must be at the bottom-most rowa
 
-#vmec_fname = 'wout_revD_input_vmec_45_320'
-#vmec_fname = 'wout_Miller_eqbm_64_128'
-#vmec_fname = 'wout_D_eqbm_pres_scale_75'
-#vmec_fname = 'wout_D_eqbm_large_eps'
-#vmec_fname = 'wout_jet_postri'
-vmec_fname  = 'wout_D3D_negtri_pres_scale_1'
+#vmec_file = 'wout_revD_input_vmec_45_320'
+#vmec_file = 'wout_Miller_eqbm_64_128'
+#vmec_file = 'wout_D_eqbm_pres_scale_75'
+#vmec_file = 'wout_D_eqbm_large_eps'
+#vmec_file = 'wout_jet_postri'
+vmec_file  = 'wout_D3D_negtri_pres_scale_1'
 
+output_dir = '../output_files'
 
 #Index of the surface of interest. Input is surface index instead of some normalized radius rho
 surf_idx = 200
@@ -19,17 +20,20 @@ surf_idx = 200
 nperiod = 2
 
 # choose 1 if you want an input file in netCDF format
-want_to_save_GX = 1
+save_gx = 1
 
 # choose 1 if you want an input files in grid.out format
-want_to_save_GS2 = 1
+save_gs2 = 1
 
 #choose 1 if you want to do a ballooning scan in the s-alpha space. Careful with the value of nperiod
 # choosing large nperiod will take significantly longer
-want_to_ball_scan = 1
+ball_scan = 1
 
 #Choose 1 if you want the characteristic equilibrium-related quantities
-want_foms = 0
+foms = 0
+
+#Choose 1 if you want to 'pickle' the intermediate data
+pickle = 0
 
 # choose 1 if your equilibrium is up-down asymmetric. Presently not available
 asymmetric_eqbm = 0

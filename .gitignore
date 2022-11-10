@@ -206,3 +206,6 @@ output_files/misc_figures
 
 # Pickles
 *.pkl
+
+# auto-generated version file
+_version.py

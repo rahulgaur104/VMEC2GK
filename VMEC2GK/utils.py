@@ -7,6 +7,7 @@ All the routines required to do the main calculation.
 import warnings
 from configparser import ConfigParser
 from textwrap import dedent
+from pathlib import Path
 from inspect import currentframe, getframeinfo
 from ast import literal_eval
 
@@ -24,9 +25,16 @@ def parse_input_file(filename):
     parser = ConfigParser()
     parser.read(filename)
     try:
-        return {k: literal_eval(v) for k, v in parser["VMEC2GK"].items()}
+        results = {k: literal_eval(v) for k, v in parser["VMEC2GK"].items()}
     except KeyError:
         raise ValueError("VMEC2GK input files should have a single header 'VMEC2GK'")
+    # vmec file and output dir should be relative to the input file
+    input_dir = Path(filename).absolute().parent
+    if "vmec_file" in results:
+        results["vmec_file"] = input_dir / f"{results['vmec_file']}.nc"
+    if "output_dir" in results:
+        results["output_dir"] = input_dir / results["output_dir"]
+    return results
 
 
 def extract_essence(arr, extract_len, mode=0):
@@ -111,9 +119,13 @@ def derm(arr, ch, par="e"):
     Finite difference subroutine
     ch = 'l' means difference along the flux surface
     ch = 'r' mean difference across the flux surfaces
-    par = 'e' means even parity of the arr. PARITY OF THE INPUT ARRAY
-    par = 'o' means odd parity
+    par = 'e' means even parity of arr.
+    par = 'o' means odd parity of arr.
     """
+    # TODO
+    # - could merge 1D and 2D with some clever reshaping
+    # - could avoid repeat code by clever transposing depending on par
+    # - par=='e' and ch=='l' changes boundary handling only, can save some repeat code
     temp = np.shape(arr)
     # finite diff along the flux surface for a single array
     if len(temp) == 1 and ch == "l":
@@ -140,9 +152,8 @@ def derm(arr, ch, par="e"):
         d1, d2 = np.shape(arr)[0], 1
         diff_arr = np.zeros((d1, d2))
         arr = np.reshape(arr, (d1, d2))
-        diff_arr[0, 0] = 2 * (
-            arr[1, 0] - arr[0, 0]
-        )  # single dimension arrays like psi, F and q don't have parity
+        # single dimension arrays like psi, F and q don't have parity
+        diff_arr[0, 0] = 2 * (arr[1, 0] - arr[0, 0])
         diff_arr[-1, 0] = 2 * (arr[-1, 0] - arr[-2, 0])
         diff_arr[1:-1, 0] = np.diff(arr[:-1, 0], axis=0) + np.diff(arr[1:, 0], axis=0)
 
@@ -179,11 +190,11 @@ def derm(arr, ch, par="e"):
 def dermv(arr, brr, ch, par="e"):
     """
     Finite difference subroutine
-    brr is the independent variable arr. Needed for weighted finite-difference
+    brr is the independent variable array. Needed for weighted finite-difference
     ch = 'l' means difference along the flux surface
     ch = 'r' mean difference across the flux surfaces
-    par = 'e' means even parity of the arr. PARITY OF THE INPUT ARRAY
-    par = 'o' means odd parity
+    par = 'e' means even parity of arr.
+    par = 'o' means odd parity of arr.
     """
     temp = np.shape(arr)
     # finite diff along the flux surface for a single array
@@ -244,9 +255,8 @@ def dermv(arr, brr, ch, par="e"):
         d1, d2 = np.shape(arr)[0], 1
         diff_arr = np.zeros((d1, d2))
         arr = np.reshape(arr, (d1, d2))
-        diff_arr[0, 0] = (
-            2 * (arr[1, 0] - arr[0, 0]) / (2 * (brr[1, 0] - brr[0, 0]))
-        )  # single dimension arrays like psi, F and q don't have parity
+        # single dimension arrays like psi, F and q don't have parity
+        diff_arr[0, 0] = 2 * (arr[1, 0] - arr[0, 0]) / (2 * (brr[1, 0] - brr[0, 0]))
         diff_arr[-1, 0] = (
             2 * (arr[-1, 0] - arr[-2, 0]) / (2 * (brr[-1, 0] - brr[-2, 0]))
         )
@@ -322,6 +332,9 @@ def dermv(arr, brr, ch, par="e"):
 
 def half_full_combine(arrh, arrf):
     """Function to combine data fronm both the half and the full radial meshes"""
+    # TODO Check input arrays have the correct shapes
+    # TODO Speed up: replace for loop with slicing operations
+    #      arr = np.empty(2*len(arrh)-1); arr[::2] = arrf; arr[1::2] = arrh[1:]
     len0 = len(arrh)
     arr = np.zeros((2 * len0 - 1,))
     # Take the first element from array f as the first element of the final array. The
@@ -338,11 +351,14 @@ def half_full_combine(arrh, arrf):
         arr[2 * i - 1] = arrh[i]
 
     arr[2 * len0 - 2] = arrf[len0 - 1]
-
     return arr
 
 
 def nperiod_data_extend(arr, nperiod, istheta=0, par="e"):
+    # TODO raise error if istheta and par=='e'
+    # TODO Could use np.tile to avoid repeated concatenations
+    # TODO behaviour when istheta is True is very different. Could be preferable to
+    # make a new function.
     if nperiod > 1:
         if istheta:  # for istheta par='o'
             arr_dum = arr
@@ -372,6 +388,8 @@ def reflect_n_append(arr, ch):
     [-np.pi,np.pi). ch can either be 'e'(even) or 'o'(odd) depending upon the parity
     of the input array.
     """
+    # TODO for consistency with other functions, should 'ch' be renamed 'par'?
+    # TODO Upgrade for 2D arrays
     rows = 1
     brr = np.zeros((2 * len(arr) - 1,))
     if ch == "e":
@@ -398,7 +416,7 @@ def find_optim_theta_arr(arr, theta_arr, res_par=-2):
     idx2 = []
     for i in range(rows):
         peaks, _ = find_peaks(arr[i], height=-1e10)
-        peaks = peaks.astype(np.int)
+        peaks = peaks.astype(int)
         idx.append(np.ndarray.tolist(peaks))
         peaks2, _ = find_peaks(-arr[i], height=-1e10)
         idx.append(np.ndarray.tolist(peaks2))
