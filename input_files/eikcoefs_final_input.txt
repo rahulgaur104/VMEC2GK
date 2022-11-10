@@ -1,3 +1,4 @@
+[VMEC2GK]
 # Some rules to follow 
 # Make sure to put a . after single-digit numbers of type floats
 # Don't use any character other than space and carriage return(Enter)
@@ -46,7 +47,3 @@ which_theta = 0
 # B_N = F/a_N where F is poloidal current on the local eqbm. surface
 
 norm_scheme = 2
-
-
-
-
