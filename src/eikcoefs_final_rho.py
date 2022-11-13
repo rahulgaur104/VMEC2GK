@@ -93,6 +93,9 @@ surf_max = surf_idx + 3
 
 rho_val = surf_idx/totl_surfs
 
+rho_arr = np.array([rho_val-1/totl_surfs, rho_val, rho_val + 1/totl_surfs])
+
+
 if totl_surfs < surf_max:
     print("total number of surfaces > maximum surface index")
     surf_min = totl_surfs - 6 - 1
@@ -104,7 +107,7 @@ if totl_surfs < surf_max:
 # fac = 0.5*(no of poloidal points in real space)/(number of modes in Fourier space)
 fac = int(2)
 
-vs = vmec_splines(rtg, rho_val) 
+vs = vmec_splines(rtg, rho_arr) 
 
 # ===========================================================
 # ==========----------IMPORTING VMEC DATA----------==========
@@ -115,7 +118,6 @@ P_full = 4 * np.pi * 1e-7 * rtg.variables["presf"][:].data
 
 q_vmec_full = -1 / (rtg.variables["iotaf"][:].data - 1e-16)
 q_vmec_half = -1 / (rtg.variables["iotas"][:].data - 1e-16)
-
 
 
 psi_full = rtg.variables["chi"][:].data
@@ -161,28 +163,16 @@ P_spl = cubspl(psi_vmec_data_4_spl[::-1], P_vmec_data_4_spl[::-1])
 q_spl = cubspl(psi_vmec_data_4_spl[::-1], q_vmec_data_4_spl[::-1])
 rho_spl = cubspl(psi_vmec_data_4_spl[::-1], rho_vmec_data_4_spl[::-1])
 
-
 q_vmec_half = -1 / (vs.iota(rho_val))  
 
-pdb.set_trace()
+#pdb.set_trace()
 
-psi = rtg.variables["chi"][surf_min:surf_max].data
-psi_LCFS = rtg.variables["chi"][-1].data
+#psi = rtg.variables["chi"][surf_min:surf_max].data
+psi = vs.psi(rho_arr)
 
-dpsids = rtg.variables["chipf"][surf_min + 1 : surf_max + 1].data
-psi_half = (
-    rtg.variables["chi"][surf_min + 1 : surf_max + 1] + 0.5 / (totl_surfs - 1) * dpsids
-)
-
-psi = psi / (2 * np.pi)
-psi_LCFS = psi_LCFS / (2 * np.pi)
-
-psi_half = psi_half / (2 * np.pi)
-
-psi = psi_LCFS - psi  # shift and flip sign to ensure consistency b/w VMEC & anlyticl
-psi_half = (
-    psi_LCFS - psi_half
-)  # shift and flip sign to ensure consistency b/w VMEC & anlyticl
+#dpsids = rtg.variables["chipf"][surf_min + 1 : surf_max + 1].data
+dpsids = vs.d_psi_d_s(rho_arr)
+psi_half = psi + 0.5 / (totl_surfs - 1) * dpsids
 
 
 Phi_f = rtg.variables["phi"][surf_min:surf_max].data
@@ -195,7 +185,9 @@ Phi_half = Phi_f + 0.5 / (totl_surfs - 1) * dPhids
 # MPa to T^2 by multiplying by  \mu  = 4*np.pi*1E-7
 P = 4 * np.pi * 1e-7 * rtg.variables["pres"][surf_min + 1 : surf_max + 1].data
 q_vmec = -1 / rtg.variables["iotaf"][surf_min:surf_max].data
-q_vmec_half = -1 / rtg.variables["iotas"][surf_min + 1 : surf_max + 1].data
+
+#q_vmec_half = -1 / rtg.variables["iotas"][surf_min + 1 : surf_max + 1].data
+q_vmec_half = -1 / vs.iota(rho_arr)
 
 xm = rtg.variables["xm"][:].data
 fixdlen = len(xm)
@@ -249,7 +241,7 @@ lmns = rtg.variables["lmns"][surf_min + 1 : surf_max + 1].data  # half mesh quan
 
 print(np.max(np.abs(lmns[2]-vs.lmns_coeffs.T[0])))
 #lmns = ifft_routine(lmns, xm, "o", fixdlen, fac)
-lmns = ifft_routine(vs.lmns_coeffs.T, xm_nyq, "e", fixdlen, fac)
+lmns = ifft_routine(vs.lmns_coeffs.T, xm_nyq, "o", fixdlen, fac)
 
 B_sub_zeta = rtg.variables["bsubvmnc"][
     surf_min + 1 : surf_max + 1
@@ -349,7 +341,6 @@ else:
 
 
 
-pdb.set_trace()
 
 ## Get all the relevant quantities from a full-grid onto a half grid by interpolating in
 ## the radial direction
@@ -393,7 +384,7 @@ F_half_2 = np.abs(
         ]
     )
 )
-F_spl = cubspl(psi[::-1], F[::-1])
+F_spl = cubspl(psi_half[::-1], F_half[::-1])
 
 # fixlen_by_2 = (2*(nperiod-1)+1)*fixlen_by_2
 # various derivatives
@@ -485,17 +476,9 @@ for i in range(0, no_of_surfs):
 psi_diff = derm(psi, "r")
 dt_st_l = derm(theta_st, "l", "o")
 
-
 dR_dpsi = derm(R, "r") / psi_diff
-
-#dR_dpsi = ifft_routine(vs.d_rmnc_d_s[0],1)*1/dpsids
-
 dR_dt = dermv(R, theta_st, "l", "e")
-
-#dZ_dpsi = derm(Z, "r") / psi_diff
-
-dZ_dpsi = ifft_routine(vs.d_zmns_d_s[0],1)*1/dpsids
-
+dZ_dpsi = derm(Z, "r") / psi_diff
 dZ_dt = dermv(Z, theta_st, "l", "o")
 
 jac = dR_dpsi * dZ_dt - dZ_dpsi * dR_dt
@@ -563,9 +546,7 @@ spl_st_to_geo_theta = cubspl(theta_st_com, theta_geo[int(no_of_surfs / 2) - 1])
 # ============================================================
 
 
-rel_surf_idx = (
-    surf_idx - surf_min - 1
-)  # -1 in the end becuase of python's 0 based indexing
+rel_surf_idx = 1  # -1 in the end becuase of python's 0 based indexing
 
 shat = (
     rho[rel_surf_idx]

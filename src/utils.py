@@ -702,6 +702,9 @@ def vmec_splines(rtg, rho_arr):
     bsubumnc_coeffs = np.zeros((mnmax_nyq, len0))
     bsubvmnc_coeffs = np.zeros((mnmax_nyq, len0))
 
+    d_bsubumnc_d_s_coeffs = np.zeros((mnmax_nyq, len0))
+    d_bsubvmnc_d_s_coeffs = np.zeros((mnmax_nyq, len0))
+
     gmnc_wout = rtg.variables['gmnc'][:].data
     bmnc_wout = rtg.variables['bmnc'][:].data
 
@@ -730,15 +733,11 @@ def vmec_splines(rtg, rho_arr):
         bsubvmnc_spl = InterpolatedUnivariateSpline(s_half_grid, bsubvmnc_wout[1:, jmn])
         bsubvmnc_coeffs[jmn, :] = bsubvmnc_spl(rho_arr) 
 
+        d_bsubumnc_d_s_spl = bsubumnc_spl.derivative()
+        d_bsubvmnc_d_s_spl = bsubvmnc_spl.derivative()
 
-        # Note that bsubsmns is on the full mesh, unlike the other components:
-        #bsubumnc.append(InterpolatedUnivariateSpline(s_half_grid, bsubumnc_wout[1:, jmn]))
-        #bsubvmnc.append(InterpolatedUnivariateSpline(s_half_grid, bsubvmnc_wout[1:, jmn]))
-
-        #d_bmnc_d_s.append(bmnc[-1].derivative())
-        #d_bsupumnc_d_s.append(bsupumnc[-1].derivative())
-        #d_bsupvmnc_d_s.append(bsupvmnc[-1].derivative())
-
+        d_bsubumnc_d_s_coeffs[jmn, :] = d_bsubumnc_d_s_spl(rho_arr)
+        d_bsubvmnc_d_s_coeffs[jmn, :] = d_bsubvmnc_d_s_spl(rho_arr)
 
     #gmnc_interp
     # Handle 1d profiles:
@@ -760,7 +759,7 @@ def vmec_splines(rtg, rho_arr):
     for v in variables:
         results.__setattr__(v, eval("rtg.variables['" + v + "'][:].data"))
 
-    variables = ['rmnc_coeffs', 'zmns_coeffs', 'lmns_coeffs', 'gmnc_coeffs', 'bmnc_coeffs', 'bsupumnc_coeffs', 'bsupvmnc_coeffs', 'bsubumnc_coeffs', 'bsubvmnc_coeffs']
+    variables = ['rmnc_coeffs', 'zmns_coeffs', 'd_rmnc_d_s_coeffs', 'd_zmns_d_s_coeffs', 'lmns_coeffs', 'd_lmns_d_s_coeffs', 'gmnc_coeffs', 'bmnc_coeffs', 'bsupumnc_coeffs', 'bsupvmnc_coeffs', 'bsubumnc_coeffs', 'bsubvmnc_coeffs', 'd_bsubumnc_d_s_coeffs', 'd_bsubvmnc_d_s_coeffs']
     for v in variables:
         results.__setattr__(v, eval(v))
 

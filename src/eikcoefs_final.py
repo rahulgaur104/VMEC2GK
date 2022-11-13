@@ -13,6 +13,8 @@ from scipy.integrate import cumtrapz as ctrap
 from scipy.interpolate import CubicSpline as cubspl
 from scipy.signal import savgol_filter as sf
 
+import pdb
+
 from utils import (
     half_full_combine,
     ifft_routine,
@@ -355,6 +357,7 @@ F_half_2 = np.abs(
 )
 F_spl = cubspl(psi[::-1], F[::-1])
 
+pdb.set_trace()
 # fixlen_by_2 = (2*(nperiod-1)+1)*fixlen_by_2
 # various derivatives
 dRj = np.zeros((no_of_surfs, fixlen_by_2))  # ML distances
