@@ -13,6 +13,7 @@ from scipy.integrate import cumtrapz as ctrap
 from scipy.interpolate import CubicSpline as cubspl
 from scipy.signal import savgol_filter as sf
 
+from matplotlib import pyplot as plt
 import pdb
 
 from utils import (
@@ -147,10 +148,7 @@ P_vmec_data_4_spl = half_full_combine(P_half, P_full)
 q_vmec_data_4_spl = half_full_combine(q_vmec_half, q_vmec_full)
 psi_vmec_data_4_spl = half_full_combine(psi_half, psi_full)
 Phi_vmec_data_4_spl = half_full_combine(Phi_f, Phi_half)
-# rho_vmec_data_4_spl = np.array([
-#     np.abs(1-psi_vmec_data_4_spl[i]/psi_LCFS)
-#     for i in range(len(psi_vmec_data_4_spl))
-# ])
+
 rho_vmec_data_4_spl = np.array(
     [
         np.sqrt(np.abs(Phi_vmec_data_4_spl[i] / Phi_LCFS))
@@ -162,7 +160,7 @@ rho_vmec_data_4_spl = np.array(
 P_spl = cubspl(psi_vmec_data_4_spl[::-1], P_vmec_data_4_spl[::-1])
 q_spl = cubspl(psi_vmec_data_4_spl[::-1], q_vmec_data_4_spl[::-1])
 rho_spl = cubspl(psi_vmec_data_4_spl[::-1], rho_vmec_data_4_spl[::-1])
-
+#F_spl = cubspl(psi_vmec_data_4_spl[::-1], )
 q_vmec_half = -1 / (vs.iota(rho_val))  
 
 #pdb.set_trace()
@@ -219,7 +217,7 @@ no_of_surfs = np.shape(R)[0]
 zmns = rtg.variables["zmns"][surf_min:surf_max].data  #
 print(np.max(np.abs(zmns[2]-vs.zmns_coeffs.T[0])))
 #Z = ifft_routine(zmns, xm, "o", fixdlen, fac)
-Z = ifft_routine(vs.zmns_coeffs.T, xm, "e", fixdlen, fac)
+Z = ifft_routine(vs.zmns_coeffs.T, xm, "o", fixdlen, fac)
 
 # Fourier coeffs of B, Half mesh quantity, i.e. specified on the radial points in
 # between the full-mesh points.
@@ -341,7 +339,6 @@ else:
 
 
 
-
 ## Get all the relevant quantities from a full-grid onto a half grid by interpolating in
 ## the radial direction
 #for i in np.arange(0, idx0 + 1):
@@ -384,7 +381,10 @@ F_half_2 = np.abs(
         ]
     )
 )
-F_spl = cubspl(psi_half[::-1], F_half[::-1])
+#if F[rel_surf_idx] > 0:
+#    F_spl = cubspl(psi, rtg.variables['bvco'][:].data)
+
+F_spl = cubspl(psi[::-1], F[::-1])
 
 # fixlen_by_2 = (2*(nperiod-1)+1)*fixlen_by_2
 # various derivatives
@@ -422,13 +422,14 @@ dt_dZ = np.zeros((no_of_surfs, fixlen_by_2))
 jac = np.zeros((no_of_surfs, fixlen_by_2))
 dBr = np.zeros((no_of_surfs, fixlen_by_2))
 
+rel_surf_idx = 1  # -1 in the end becuase of python's 0 based indexing
 
 # VMEC B_p here
 B_p = B_theta_vmec
 
 # Setting the 0th element to 0. Sometimes it's 1E-17
 theta_st[:, 0] = np.zeros((no_of_surfs,))
-theta_st_com = theta_st[int(no_of_surfs / 2) - 1].copy()
+theta_st_com = theta_st[rel_surf_idx].copy()
 
 B_original = B[int(no_of_surfs / 2) - 1].copy()
 # B_local_max_0_idx =np.where(B_original[:3] == np.max(B_original[:3]))[0][0]
@@ -453,7 +454,7 @@ else:
 
 B_original2 = B[int(no_of_surfs / 2) - 1].copy()
 # theta_st_com = np.sort(symmetrize(theta_st_com.copy(), B[int(no_of_surfs/2)-1]))
-theta_st_com = theta_st[int(no_of_surfs / 2) - 1].copy()
+theta_st_com = theta_st[1].copy()
 # print("theta_st_com is not uniformly spaced so derm can't be central difference")
 print(
     "Note that theta_st is not uniformly spaced so derm can't be central difference.\n"
@@ -478,6 +479,7 @@ dt_st_l = derm(theta_st, "l", "o")
 
 dR_dpsi = derm(R, "r") / psi_diff
 dR_dt = dermv(R, theta_st, "l", "e")
+
 dZ_dpsi = derm(Z, "r") / psi_diff
 dZ_dt = dermv(Z, theta_st, "l", "o")
 
@@ -488,7 +490,7 @@ dpsidZ = -dR_dt / jac
 dt_dR = -dZ_dpsi / jac
 dt_dZ = dR_dpsi / jac
 
-
+pdb.set_trace()
 for i in range(no_of_surfs):
     dRj[i, :] = derm(R[i, :], "l", "e")
     dZj[i, :] = derm(Z[i, :], "l", "o")
@@ -546,7 +548,6 @@ spl_st_to_geo_theta = cubspl(theta_st_com, theta_geo[int(no_of_surfs / 2) - 1])
 # ============================================================
 
 
-rel_surf_idx = 1  # -1 in the end becuase of python's 0 based indexing
 
 shat = (
     rho[rel_surf_idx]
@@ -660,12 +661,12 @@ dPdr_ex = dPdpsi * dpsi_dr_ex
 aprime = -(np.reshape(q_vmec_half, (-1, 1)) * dtdr_st_ex + dqdr_ex * theta_st_com_ex)
 
 
-# plt.plot(
-#    theta_st_com, aprime[rel_surf_idx], theta_st_com, -aprime_bish_1,
-#    theta_st_com, -aprime_bish
+#plt.plot(
+#    theta_st_com_ex, aprime[rel_surf_idx], theta_st_com_ex, -aprime_bish_1,
+#    theta_st_com_ex, -aprime_bish
 # )
-# plt.legend(['aprime_fd', 'aprime_bish_corr', 'aprime_bish'])
-# plt.show()
+#plt.legend(['aprime_fd', 'aprime_bish_corr', 'aprime_bish'])
+#plt.show()
 
 B_ex = nperiod_data_extend(B[rel_surf_idx], nperiod)
 B_ex_original = nperiod_data_extend(B_original, nperiod)
