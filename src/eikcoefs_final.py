@@ -11,7 +11,7 @@ from netCDF4 import Dataset
 from scipy.integrate import cumtrapz as ctrap
 from scipy.interpolate import CubicSpline as cubspl
 from scipy.signal import savgol_filter as sf
-#from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt
 from inspect import currentframe, getframeinfo
 from utils import *
 
@@ -191,6 +191,7 @@ gmnc  = rtg.variables['gmnc'][surf_min+1:surf_max+1].data   # Fourier coeffs of 
 g_jac = ifft_routine(gmnc, xm_nyq, 'e', fixdlen, fac)
 
 lmns = rtg.variables['lmns'][surf_min+1:surf_max+1].data #half mesh quantity
+
 lmns = ifft_routine(lmns, xm, 'o', fixdlen, fac)
 
 B_sub_zeta  = rtg.variables['bsubvmnc'][surf_min+1:surf_max+1].data # half mesh quantity
@@ -230,6 +231,7 @@ if (R[0][0] < R[0][idx0]):
     theta_st       = theta_vmec - lmns
     B_theta_vmec_2 = np.zeros((no_of_surfs, idx0+1))
 else:
+    pdb.set_trace()
     Z           = np.abs(extract_essence(Z, idx0+1, 1))
     R           = extract_essence(R, idx0+1, 1)
     B           = extract_essence(B, idx0+1, 1)
@@ -548,6 +550,7 @@ gbdrift_bish = dpsidrho/(B_ex**3)*(-2*B_ex**2*dBdr_bish/dpsi_dr_ex + aprime_bish
 #gbdrift = dpsidrho*(-2/B_ex*dBdr_bish/dpsi_dr_ex + 2*aprime*F/R_ex*1/B_ex**3*dBl_ex/dl_ex)
 gbdrift  = dpsidrho*(-2/B_ex*dBdr_bish/dpsi_dr_ex + 2*aprime*F/R_ex*1/B_ex**3*dBl_dl_ex)
 gbdrift0 =  1*2/(B_ex**3)*dpsidrho*np.reshape(F, (-1,1))/R_ex*(dqdr_ex*dBl_dl_ex)
+#pdb.set_trace()
 
 cvdrift  =  dpsidrho/np.abs(B_ex)*(-2*(2*dPdpsi/(2*B_ex))) + gbdrift
 
@@ -573,8 +576,37 @@ bishop_dict = {'a_N':a_N, 'B_N':B_N, 'mag_well':mag_well, 'mag_local_peak':mag_l
                'spl_st_to_eqarc_theta':spl_st_to_eqarc_theta}
 
 
+
+X = np.zeros((9, len(theta_st_com_ex)))
+
+X[0] = gds2[2]
+X[1] = gds21[2]
+X[2] = gds22
+X[3] = B_ex/B_N
+X[4] = gradpar
+X[5] = gbdrift[2]
+X[6] = cvdrift[2]
+X[7] = gbdrift0[2]
+X[8] = theta_st_com_ex
+
+np.save("X_VMEC2GK.npy", X)
+
+#plt.plot(theta_st_com_ex, gbdrift0[2]); plt.show()
+#plt.plot(theta_st_com_ex, gds21[2]); plt.show()
+#plt.plot(theta_st_com_ex, B_ex/B_N); plt.show()
+#plt.plot(theta_st_com_ex, gradpar); plt.show()
+#plt.plot(theta_st_com_ex, gds22); plt.show()
+#plt.plot(theta_st_com_ex, gbdrift[2]); plt.show()
+#plt.plot(theta_st_com_ex, cvdrift[2]); plt.show()
 #print("rhoc=", (np.max(R[rel_surf_idx])-np.min(R[rel_surf_idx]))/(np.max(R_LCFS)-np.min(R_LCFS)))
-#pdb.set_trace()
+theta_geo = spl_st_to_geo_theta(theta_st_com)
+theta_geo_com_ex = nperiod_data_extend(theta_geo, nperiod, istheta=1, par='o')
+
+#plt.plot(reflect_n_append(theta_geo_com_ex, 'o'), reflect_n_append(cvdrift[2], 'e')); plt.show()
+plt.plot(reflect_n_append(theta_geo_com_ex, 'o'), reflect_n_append(gds2[2], 'e')); plt.show()
+pdb.set_trace()
+
+
 
 # saving bishop dict only once
 if want_to_ball_scan == 1 or want_to_save_GS2 == 1 or want_foms == 1:

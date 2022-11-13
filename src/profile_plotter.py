@@ -49,12 +49,11 @@ with open(fname_in_txt, 'r') as f:
 
 vmec_fname = variables["vmec_fname"]
 
-want_to_surf_plot = variables["want_to_plot_stuff"]
+want_to_surf_plot = 1
 
 
 # get the type of eqbm, i.e., Miller and/or negtri/postri
 eqbm_type = vmec_fname.split('_')[2]
-
 
 
 
@@ -209,21 +208,23 @@ plt.ylabel('P', fontsize=20)
 plt.xticks(fontsize=18)
 plt.yticks(fontsize=18)
 plt.tight_layout()
-plt.savefig('{0}/output_files_vmec/profiles/{1}'.format(parnt_dir_nam, "P_vs_rhoc.png"))
+plt.savefig('{0}/output_files/profiles/{1}'.format(parnt_dir_nam, "P_vs_rhoc.png"))
 
-
+plt.figure()
 plt.plot(rhoc, q_vmec_half, '-b', linewidth=2)
 plt.xlabel('rhoc', fontsize=20)
 plt.ylabel('q', fontsize=20)
 plt.xticks(fontsize=18)
 plt.yticks(fontsize=18)
 plt.tight_layout()
-plt.savefig('{0}/output_files_vmec/profiles/{1}'.format(parnt_dir_nam, "q_vs_rhoc.png"))
+plt.savefig('{0}/output_files/profiles/{1}'.format(parnt_dir_nam, "q_vs_rhoc.png"))
 
 
+plt.figure()
 # For plotting and saving surfaces
-for i in np.arange(0, surf_max-surf_min, 80):
+for i in np.arange(0, surf_max-surf_min, 10):
     plt.plot(R[i], Z[i], '-b', linewidth = 1, alpha= 0.2)
+    plt.plot(R[i][::-1], -1*Z[i], '-b', linewidth = 1, alpha= 0.2)
 
 
 # for NOAH_jet postr
@@ -232,12 +233,13 @@ for i in np.arange(0, surf_max-surf_min, 80):
 #plt.plot(R[14], Z[14],'-r', R[59], Z[59], '-r', R[137], Z[137], '-r', R[257], Z[257], '-r', linewidth=1.8)
 
 plt.plot(R_mag_ax, 0, 'xk', ms=12, mew=3)
-plt.plot(R_LCFS[Z_LCFS>=0], Z_LCFS[Z_LCFS>=0], '-k', linewidth=2.5)
+#plt.plot(R_LCFS[Z_LCFS>=0], Z_LCFS[Z_LCFS>=0], '-k', linewidth=2.5)
+plt.plot(R_LCFS, Z_LCFS, '-k', linewidth=2.5)
 plt.xlim([np.min(R_LCFS)-0.02, np.max(R_LCFS)+0.02])
-plt.ylim([0-0.02, np.max(Z_LCFS)+0.02])
+#plt.ylim([0-0.02, np.max(Z_LCFS)+0.02])
 plt.xticks(fontsize=18)
 plt.yticks(fontsize=18)
 plt.tight_layout()
-plt.savefig('{0}/output_files_vmec/profiles/{1}'.format(parnt_dir_nam, "flux_surfs.png"))
+plt.savefig('{0}/output_files/profiles/{1}'.format(parnt_dir_nam, "flux_surfs.png"))
 #pdb.set_trace()
 

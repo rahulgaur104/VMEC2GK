@@ -8,24 +8,28 @@
 #vmec_fname = 'wout_D_eqbm_pres_scale_75'
 #vmec_fname = 'wout_D_eqbm_large_eps'
 #vmec_fname = 'wout_jet_postri'
-vmec_fname  = 'wout_D3D_negtri_pres_scale_1'
+#vmec_fname  = 'wout_D3D_negtri_pres_scale_70_compar'
+#vmec_fname  = 'wout_D3D_postri_pres_scale_70_hres'
+#vmec_fname  = 'wout_D3D_postri_pres_scale_70_hres'
+#vmec_fname  = 'wout_D3D_negtri_pres_scale_70_hres_12DOFs_eikcoefs_chk'
+vmec_fname  = 'wout_D3D_negtri_pres_scale_10_hres_uns'
 
 
-#Index of the surface of interest. Input is surface index instead of some normalized radius rho
-surf_idx = 200
+
+surf_idx = 256
 
 #nperiod must always be >= 1. No of time the flux tube goes around is (2*nperiod-1)
-nperiod = 2
+nperiod = 3
 
 # choose 1 if you want an input file in netCDF format
-want_to_save_GX = 1
+want_to_save_GX = 0
 
 # choose 1 if you want an input files in grid.out format
-want_to_save_GS2 = 1
+want_to_save_GS2 = 0
 
 #choose 1 if you want to do a ballooning scan in the s-alpha space. Careful with the value of nperiod
 # choosing large nperiod will take significantly longer
-want_to_ball_scan = 1
+want_to_ball_scan = 0
 
 #Choose 1 if you want the characteristic equilibrium-related quantities
 want_foms = 0
@@ -45,7 +49,7 @@ which_theta = 0
 # If norm_schem = 2 => a_N is the minor radius of the LCFS
 # B_N = F/a_N where F is poloidal current on the local eqbm. surface
 
-norm_scheme = 2
+norm_scheme = 1
 
 
 
