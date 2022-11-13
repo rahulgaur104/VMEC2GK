@@ -12,7 +12,9 @@ from ast import literal_eval
 
 import numpy as np
 from scipy.signal import find_peaks
+from scipy.interpolate import InterpolatedUnivariateSpline
 
+import pdb
 
 def parse_input_file(filename):
     """
@@ -597,3 +599,186 @@ def symmetrize(theta_arr, b_arr, mode=1, spacing=1):
                 spacing,
             )
             return [theta_new_arr1, theta_new_arr2]
+
+class Struct:
+    """
+    Empty class
+    """
+    pass
+
+
+def vmec_splines(rtg, rho_arr):
+    """
+    Initialize radial splines for a VMEC equilibrium.
+
+    Args:
+        vmec: An instance of :obj:`simsopt.mhd.vmec.Vmec`.
+
+    Returns:
+        A structure with the splines as attributes.
+    """
+    results = Struct()
+
+
+    s_full_grid = rtg.variables['phi'][:].data
+    dPhids = rtg.variables["phipf"][:].data
+    totl_surfs = len(s_full_grid)
+    s_half_grid = s_full_grid[:-1] + 0.5 / (totl_surfs - 1) * dPhids[:-1]
+
+    psi = rtg.variables["chi"][:].data
+    psi_LCFS = rtg.variables["chi"][-1].data
+    dpsids = rtg.variables["chipf"][:].data
+    psi_half = (
+        rtg.variables["chi"][:] + 0.5 / (totl_surfs - 1) * dpsids
+    )
+    
+    psi = psi / (2 * np.pi)
+    psi_LCFS = psi_LCFS / (2 * np.pi)
+    psi_half = psi_half / (2 * np.pi)
+    
+    psi = psi_LCFS - psi  # shift and flip sign to ensure consistency b/w VMEC & anlyticl
+    psi_half = (
+        psi_LCFS - psi_half
+    )  # shift and flip sign to ensure consistency b/w VMEC & anlyticl
+
+
+    rmnc_wout = rtg.variables['rmnc'][:].data
+    zmns_wout = rtg.variables['zmns'][:].data
+    lmns_wout = rtg.variables['lmns'][:].data
+
+    mnmax = rtg.variables['mnmax'][:].data
+    mnmax_nyq = rtg.variables['mnmax_nyq'][:].data
+
+    # This will throw an exception 
+    try:
+        len0 = len(rho_arr)
+    except TypeError:
+        # Check if it's an array
+        if type(rho_arr) == 'numpy.ndarray': 
+            len0 = len(rho_arr)
+        elif type(rho_arr) == 'list':# else it's a list and convert it to an array
+            rho_arr = np.array(rho_arr)
+            len0 = len(rho_arr)
+        else:# it's a float
+            rho_arr = np.array([rho_arr])
+            len0 = len(rho_arr)
+
+
+    rmnc_coeffs = np.zeros((mnmax, len0))
+    zmns_coeffs = np.zeros((mnmax, len0))
+    lmns_coeffs = np.zeros((mnmax, len0))
+
+    d_rmnc_d_s_coeffs = np.zeros((mnmax, len0))
+    d_zmns_d_s_coeffs = np.zeros((mnmax, len0))
+    d_lmns_d_s_coeffs = np.zeros((mnmax, len0))
+
+    for jmn in range(mnmax):
+        rmnc_spl = InterpolatedUnivariateSpline(s_full_grid, rmnc_wout[:, jmn])
+        rmnc_coeffs[jmn, :] = rmnc_spl(rho_arr) 
+
+        zmns_spl = InterpolatedUnivariateSpline(s_full_grid, zmns_wout[:, jmn])
+        zmns_coeffs[jmn, :] = zmns_spl(rho_arr)
+
+        lmns_spl = InterpolatedUnivariateSpline(s_half_grid, lmns_wout[1:, jmn])
+        lmns_coeffs[jmn, :] = lmns_spl(rho_arr)
+
+        d_rmnc_d_s_spl = rmnc_spl.derivative()
+        d_rmnc_d_s_coeffs[jmn, :] = d_rmnc_d_s_spl(rho_arr)
+
+        d_zmns_d_s_spl = zmns_spl.derivative()
+        d_zmns_d_s_coeffs[jmn, :] = d_zmns_d_s_spl(rho_arr)
+
+        d_lmns_d_s_spl = lmns_spl.derivative()
+        d_lmns_d_s_coeffs[jmn, :] = d_lmns_d_s_spl(rho_arr)
+
+
+    #print(np.shape(rmnc_wout))
+    gmnc_coeffs = np.zeros((mnmax_nyq, len0))
+    bmnc_coeffs = np.zeros((mnmax_nyq, len0))
+
+    bsupumnc_coeffs = np.zeros((mnmax_nyq, len0))
+    bsupvmnc_coeffs = np.zeros((mnmax_nyq, len0))
+
+    bsubumnc_coeffs = np.zeros((mnmax_nyq, len0))
+    bsubvmnc_coeffs = np.zeros((mnmax_nyq, len0))
+
+    gmnc_wout = rtg.variables['gmnc'][:].data
+    bmnc_wout = rtg.variables['bmnc'][:].data
+
+    bsupumnc_wout = rtg.variables['bsupumnc'][:].data
+    bsupvmnc_wout = rtg.variables['bsupvmnc'][:].data
+
+    bsubumnc_wout = rtg.variables['bsubumnc'][:].data
+    bsubvmnc_wout = rtg.variables['bsubvmnc'][:].data
+
+    for jmn in range(mnmax_nyq):
+        gmnc_spl = InterpolatedUnivariateSpline(s_half_grid, gmnc_wout[1:, jmn])
+        gmnc_coeffs[jmn, :] = gmnc_spl(rho_arr) 
+
+        bmnc_spl = InterpolatedUnivariateSpline(s_half_grid, bmnc_wout[1:, jmn])
+        bmnc_coeffs[jmn, :] = bmnc_spl(rho_arr) 
+
+        bsupumnc_spl = InterpolatedUnivariateSpline(s_half_grid, bsupumnc_wout[1:, jmn])
+        bsupumnc_coeffs[jmn, :] = bsupumnc_spl(rho_arr) 
+
+        bsupvmnc_spl = InterpolatedUnivariateSpline(s_half_grid, bsupvmnc_wout[1:, jmn])
+        bsupvmnc_coeffs[jmn, :] = bsupvmnc_spl(rho_arr) 
+
+        bsubumnc_spl = InterpolatedUnivariateSpline(s_half_grid, bsubumnc_wout[1:, jmn])
+        bsubumnc_coeffs[jmn, :] = bsubumnc_spl(rho_arr) 
+
+        bsubvmnc_spl = InterpolatedUnivariateSpline(s_half_grid, bsubvmnc_wout[1:, jmn])
+        bsubvmnc_coeffs[jmn, :] = bsubvmnc_spl(rho_arr) 
+
+
+        # Note that bsubsmns is on the full mesh, unlike the other components:
+        #bsubumnc.append(InterpolatedUnivariateSpline(s_half_grid, bsubumnc_wout[1:, jmn]))
+        #bsubvmnc.append(InterpolatedUnivariateSpline(s_half_grid, bsubvmnc_wout[1:, jmn]))
+
+        #d_bmnc_d_s.append(bmnc[-1].derivative())
+        #d_bsupumnc_d_s.append(bsupumnc[-1].derivative())
+        #d_bsupvmnc_d_s.append(bsupvmnc[-1].derivative())
+
+
+    #gmnc_interp
+    # Handle 1d profiles:
+    results.pressure = InterpolatedUnivariateSpline(s_half_grid, rtg.variables['pres'][1:])
+    results.d_pressure_d_s = results.pressure.derivative()
+
+    results.psi = InterpolatedUnivariateSpline(s_half_grid, psi_half[1:])
+    results.d_psi_d_s = results.psi.derivative()
+
+    results.iota = InterpolatedUnivariateSpline(s_half_grid, rtg.variables['iotas'][1:])
+    results.d_iota_d_s = results.iota.derivative()
+
+    # Toroidal flux enclosed by the boundary
+    results.phiedge = rtg.variables['phi'][-1].data
+    # Poloidal flux enclosed by the boundary
+    results.psiedge = psi[-1] 
+
+    variables = ['Aminor_p', 'mnmax', 'xm', 'xn', 'mnmax_nyq', 'xm_nyq', 'xn_nyq', 'nfp']
+    for v in variables:
+        results.__setattr__(v, eval("rtg.variables['" + v + "'][:].data"))
+
+    variables = ['rmnc_coeffs', 'zmns_coeffs', 'lmns_coeffs', 'gmnc_coeffs', 'bmnc_coeffs', 'bsupumnc_coeffs', 'bsupvmnc_coeffs', 'bsubumnc_coeffs', 'bsubvmnc_coeffs']
+    for v in variables:
+        results.__setattr__(v, eval(v))
+
+    return results
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
